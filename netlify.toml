@@ -1,0 +1,16 @@
+# Netlify build settings for the ESWA Wellbeing Hub.
+# Nitro's "netlify" preset writes static assets to dist/ and the SSR server
+# function to .netlify/functions-internal/, which Netlify picks up automatically.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NITRO_PRESET = "netlify"
+  # Netlify's secrets scanner fails the build if an env var value appears in the
+  # output. These values are public by design (VITE_* is inlined into the browser
+  # bundle, and the Supabase publishable key is meant to be public), so skip them.
+  # Secrets such as GEMINI_API_KEY are read at runtime and are NOT listed here.
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY,VITE_SUPABASE_PROJECT_ID,VITE_PUBLIC_APP_URL,SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY"

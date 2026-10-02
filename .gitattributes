@@ -1,0 +1,6 @@
+# Keep LF line endings on every OS (Prettier/ESLint expect LF; avoids noisy
+# diffs and lint errors for teammates on Windows).
+* text=auto eol=lf
+*.jpg binary
+*.png binary
+*.ico binary
