@@ -12,5 +12,7 @@
   # Netlify's secrets scanner fails the build if an env var value appears in the
   # output. These values are public by design (VITE_* is inlined into the browser
   # bundle, and the Supabase publishable key is meant to be public), so skip them.
+  # GEMINI_MODEL and CHAT_DAILY_CAP are plain settings whose default values are
+  # written in src/routes/api/chat.ts, so their values legitimately appear in the code.
   # Secrets such as GEMINI_API_KEY are read at runtime and are NOT listed here.
-  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY,VITE_SUPABASE_PROJECT_ID,VITE_PUBLIC_APP_URL,SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY"
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY,VITE_SUPABASE_PROJECT_ID,VITE_PUBLIC_APP_URL,SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,GEMINI_MODEL,CHAT_DAILY_CAP"
