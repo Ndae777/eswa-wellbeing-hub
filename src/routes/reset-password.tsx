@@ -7,13 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { friendlyError } from "@/lib/friendly-errors";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
-    meta: [
-      { title: "Reset password — ESWA staff" },
-      { name: "robots", content: "noindex" },
-    ],
+    meta: [{ title: "Reset password — ESWA staff" }, { name: "robots", content: "noindex" }],
   }),
   component: ResetPassword,
 });
@@ -49,8 +47,10 @@ function ResetPassword() {
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (password.length < 8) {
-      toast.error("Use at least 8 characters.");
+    if (password.length < 10) {
+      toast.error(
+        "Please use at least 10 characters. A few random words joined together work well.",
+      );
       return;
     }
     if (password !== confirm) {
@@ -58,10 +58,16 @@ function ResetPassword() {
       return;
     }
     setPending(true);
-    const { error } = await supabase.auth.updateUser({ password });
+    let failure: unknown = null;
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      failure = error;
+    } catch (error) {
+      failure = error;
+    }
     setPending(false);
-    if (error) {
-      toast.error(error.message);
+    if (failure) {
+      toast.error(friendlyError(failure, "We couldn't save your new password. Please try again."));
       return;
     }
     toast.success("Password updated. You are signed in.");
@@ -81,7 +87,7 @@ function ResetPassword() {
                 id="new-password"
                 type="password"
                 required
-                minLength={8}
+                minLength={10}
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -93,7 +99,7 @@ function ResetPassword() {
                 id="confirm-password"
                 type="password"
                 required
-                minLength={8}
+                minLength={10}
                 autoComplete="new-password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}

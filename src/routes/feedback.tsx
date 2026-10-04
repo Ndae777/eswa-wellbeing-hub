@@ -4,12 +4,14 @@ import { CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { FieldError } from "@/components/site/field-error";
 import { SiteLayout } from "@/components/site/site-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { NETWORK_ERROR_MESSAGE, postJson } from "@/lib/api-client";
+import { validateFeedback, type FeedbackErrors } from "@/lib/validation";
 import { fetchUpcomingWorkshops } from "@/lib/workshops";
 
 export const Route = createFileRoute("/feedback")({
@@ -37,27 +39,29 @@ type FormState = {
   school: string;
   role_at_school: string;
   workshop_id: string;
-  overall_rating: number;
-  stress_level: number;
-  wellbeing_before: number;
-  wellbeing_after: number;
-  would_recommend: boolean;
+  overall_rating: number | null;
+  stress_level: number | null;
+  wellbeing_before: number | null;
+  wellbeing_after: number | null;
+  would_recommend: boolean | null;
   most_valuable: string;
   improvements: string;
   future_topics: string;
 };
 
+// Nothing is pre-selected. Ratings start empty so every number in our impact
+// reports comes from a real answer, not a default.
 const initial: FormState = {
   full_name: "",
   email: "",
   school: "",
   role_at_school: "",
   workshop_id: "",
-  overall_rating: 4,
-  stress_level: 5,
-  wellbeing_before: 5,
-  wellbeing_after: 7,
-  would_recommend: true,
+  overall_rating: null,
+  stress_level: null,
+  wellbeing_before: null,
+  wellbeing_after: null,
+  would_recommend: null,
   most_valuable: "",
   improvements: "",
   future_topics: "",
@@ -70,26 +74,33 @@ function Scale({
   max,
   value,
   onChange,
+  error,
 }: {
   id: string;
   label: string;
   hint: string;
   max: number;
-  value: number;
-  onChange: (value: number) => void;
+  value: number | null;
+  onChange: (value: number | null) => void;
+  error?: string | undefined;
 }) {
   return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
+    <div className="space-y-2" id={id} tabIndex={-1}>
+      <Label id={`${id}-label`}>{label}</Label>
       <p className="text-xs text-muted-foreground">{hint}</p>
-      <div className="flex flex-wrap gap-2" id={id}>
+      <div
+        role="group"
+        aria-labelledby={`${id}-label`}
+        aria-describedby={error ? `${id}-error` : undefined}
+        className="flex flex-wrap gap-2"
+      >
         {Array.from({ length: max }, (_, index) => index + 1).map((option) => (
           <button
             key={option}
             type="button"
-            onClick={() => onChange(option)}
+            onClick={() => onChange(value === option ? null : option)}
             aria-pressed={value === option}
-            className={`h-9 w-9 rounded-md border text-sm font-medium transition ${
+            className={`h-10 w-10 rounded-md border text-sm font-medium transition ${
               value === option
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-input bg-background text-foreground hover:bg-accent"
@@ -99,12 +110,23 @@ function Scale({
           </button>
         ))}
       </div>
+      <FieldError id={`${id}-error`} message={error} />
     </div>
   );
 }
 
+const SERVER_MESSAGES: { [code: string]: string } = {
+  too_many: "You've sent a few responses in a row. Please wait a few minutes and try again.",
+  unavailable: "We couldn't save your feedback just now. Please try again in a minute.",
+  bad_request:
+    "Something about that request didn't look right. Please refresh the page and try again.",
+};
+
 function FeedbackPage() {
   const [form, setForm] = useState<FormState>(initial);
+  const [errors, setErrors] = useState<FeedbackErrors>({});
+  const [attempted, setAttempted] = useState(false);
+  const [trap, setTrap] = useState("");
   const [done, setDone] = useState(false);
   const { data: workshops } = useQuery({
     queryKey: ["workshops", "for-feedback"],
@@ -113,32 +135,55 @@ function FeedbackPage() {
 
   const submit = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("feedback").insert({
-        full_name: form.full_name.trim() || null,
-        email: form.email.trim().toLowerCase() || null,
-        school: form.school.trim() || null,
-        role_at_school: form.role_at_school.trim() || null,
-        workshop_id: form.workshop_id || null,
-        overall_rating: form.overall_rating,
-        stress_level: form.stress_level,
-        wellbeing_before: form.wellbeing_before,
-        wellbeing_after: form.wellbeing_after,
-        would_recommend: form.would_recommend,
-        most_valuable: form.most_valuable.trim() || null,
-        improvements: form.improvements.trim() || null,
-        future_topics: form.future_topics.trim() || null,
-      });
-      if (error) throw error;
+      const reply = await postJson("/api/feedback", { ...form, website: trap });
+      if (reply.networkError) throw new Error("network");
+      if (!reply.ok) {
+        const fieldErrors = reply.data["errors"] as FeedbackErrors | undefined;
+        if (reply.data["code"] === "invalid" && fieldErrors) {
+          setErrors(fieldErrors);
+          throw new Error("fields");
+        }
+        throw new Error(String(reply.data["code"] ?? "unavailable"));
+      }
     },
     onSuccess: () => {
       setDone(true);
-      toast.success("Thank you — your feedback has been sent to ESWA.");
+      toast.success("Thank you. Your feedback has been sent to ESWA.");
     },
-    onError: () => toast.error("We could not send your feedback. Please try again."),
+    onError: (error: Error) => {
+      if (error.message === "fields") {
+        toast.error("Please check the highlighted answers.");
+      } else if (error.message === "network") {
+        toast.error(NETWORK_ERROR_MESSAGE);
+      } else {
+        toast.error(
+          SERVER_MESSAGES[error.message] ??
+            "We couldn't save your feedback just now. Please try again in a minute.",
+        );
+      }
+    },
   });
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    const next = { ...form, [key]: value };
+    setForm(next);
+    if (attempted) setErrors(validateFeedback(next).errors);
+  }
+
+  function onSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    if (submit.isPending) return;
+    setAttempted(true);
+    const result = validateFeedback(form);
+    setErrors(result.errors);
+    const firstBad = Object.keys(result.errors)[0];
+    if (firstBad) {
+      toast.error("Please check the highlighted answers.");
+      const target = firstBad === "wellbeing" ? "wellbeing_before" : firstBad;
+      document.getElementById(target)?.focus();
+      return;
+    }
+    submit.mutate();
   }
 
   return (
@@ -147,19 +192,20 @@ function FeedbackPage() {
         <div className="mx-auto max-w-3xl px-4 py-12">
           <h1 className="text-3xl sm:text-4xl">Your voice shapes our work</h1>
           <p className="mt-3 text-sm text-muted-foreground sm:text-base">
-            About three minutes. You may answer anonymously — only the ratings are required.
+            About three minutes. You may answer anonymously. The only required question is your
+            overall rating (marked *).
           </p>
         </div>
       </section>
 
       <section className="mx-auto max-w-3xl px-4 py-10 pb-16">
         {done ? (
-          <div className="card-surface p-8 text-center">
+          <div className="card-surface p-8 text-center" role="status">
             <CheckCircle2 className="mx-auto h-10 w-10 text-success" />
             <h2 className="mt-3 font-display text-xl">Feedback received</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Thank you for helping ESWA improve. Your responses feed directly into our impact
-              reporting.
+              Thank you for helping ESWA improve. Your answers go straight to our team. We don't
+              send you an email for this form.
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-3">
               <Button asChild variant="secondary">
@@ -171,50 +217,72 @@ function FeedbackPage() {
             </div>
           </div>
         ) : (
-          <form
-            className="card-surface space-y-7 p-6"
-            onSubmit={(event) => {
-              event.preventDefault();
-              submit.mutate();
-            }}
-          >
+          <form className="card-surface space-y-7 p-6" onSubmit={onSubmit} noValidate>
+            {/* Bot trap: hidden from people. Leave it empty. */}
+            <div aria-hidden="true" className="absolute left-[-9999px] h-0 w-0 overflow-hidden">
+              <label htmlFor="website">Website</label>
+              <input
+                id="website"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                value={trap}
+                onChange={(e) => setTrap(e.target.value)}
+              />
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="full_name">Name (optional)</Label>
                 <Input
                   id="full_name"
+                  autoComplete="name"
                   maxLength={120}
+                  aria-invalid={Boolean(errors.full_name)}
+                  aria-describedby={errors.full_name ? "full_name-error" : undefined}
                   value={form.full_name}
                   onChange={(e) => update("full_name", e.target.value)}
                 />
+                <FieldError id="full_name-error" message={errors.full_name} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email (optional)</Label>
                 <Input
                   id="email"
                   type="email"
-                  maxLength={255}
+                  autoComplete="email"
+                  inputMode="email"
+                  maxLength={254}
+                  aria-invalid={Boolean(errors.email)}
+                  aria-describedby={errors.email ? "email-error" : undefined}
                   value={form.email}
                   onChange={(e) => update("email", e.target.value)}
                 />
+                <FieldError id="email-error" message={errors.email} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="school">School or organisation</Label>
+                <Label htmlFor="school">School or organisation (optional)</Label>
                 <Input
                   id="school"
                   maxLength={160}
+                  aria-invalid={Boolean(errors.school)}
+                  aria-describedby={errors.school ? "school-error" : undefined}
                   value={form.school}
                   onChange={(e) => update("school", e.target.value)}
                 />
+                <FieldError id="school-error" message={errors.school} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="role_at_school">Your role</Label>
+                <Label htmlFor="role_at_school">Your role (optional)</Label>
                 <Input
                   id="role_at_school"
                   maxLength={120}
+                  aria-invalid={Boolean(errors.role_at_school)}
+                  aria-describedby={errors.role_at_school ? "role_at_school-error" : undefined}
                   value={form.role_at_school}
                   onChange={(e) => update("role_at_school", e.target.value)}
                 />
+                <FieldError id="role_at_school-error" message={errors.role_at_school} />
               </div>
             </div>
 
@@ -233,6 +301,7 @@ function FeedbackPage() {
                   </option>
                 ))}
               </select>
+              <FieldError id="workshop_id-error" message={errors.workshop_id} />
             </div>
 
             <Scale
@@ -242,35 +311,42 @@ function FeedbackPage() {
               max={5}
               value={form.overall_rating}
               onChange={(value) => update("overall_rating", value)}
+              error={errors.overall_rating}
             />
             <Scale
               id="stress_level"
-              label="How stressed do you feel in your work at the moment?"
+              label="How stressed do you feel in your work at the moment? (optional)"
               hint="1 = very calm, 10 = completely overwhelmed"
               max={10}
               value={form.stress_level}
               onChange={(value) => update("stress_level", value)}
+              error={errors.stress_level}
             />
-            <Scale
-              id="wellbeing_before"
-              label="Your wellbeing BEFORE the workshop"
-              hint="1 = very low, 10 = thriving"
-              max={10}
-              value={form.wellbeing_before}
-              onChange={(value) => update("wellbeing_before", value)}
-            />
-            <Scale
-              id="wellbeing_after"
-              label="Your wellbeing AFTER the workshop"
-              hint="1 = very low, 10 = thriving"
-              max={10}
-              value={form.wellbeing_after}
-              onChange={(value) => update("wellbeing_after", value)}
-            />
+            <div className="space-y-5">
+              <Scale
+                id="wellbeing_before"
+                label="Your wellbeing BEFORE the workshop (optional)"
+                hint="1 = very low, 10 = thriving"
+                max={10}
+                value={form.wellbeing_before}
+                onChange={(value) => update("wellbeing_before", value)}
+                error={errors.wellbeing}
+              />
+              <Scale
+                id="wellbeing_after"
+                label="Your wellbeing AFTER the workshop (optional)"
+                hint="1 = very low, 10 = thriving"
+                max={10}
+                value={form.wellbeing_after}
+                onChange={(value) => update("wellbeing_after", value)}
+              />
+            </div>
 
             <div className="space-y-2">
-              <Label>Would you recommend ESWA to a colleague?</Label>
-              <div className="flex gap-2">
+              <Label id="recommend-label">
+                Would you recommend ESWA to a colleague? (optional)
+              </Label>
+              <div role="group" aria-labelledby="recommend-label" className="flex gap-2">
                 {[
                   { label: "Yes", value: true },
                   { label: "Not yet", value: false },
@@ -278,7 +354,13 @@ function FeedbackPage() {
                   <button
                     key={option.label}
                     type="button"
-                    onClick={() => update("would_recommend", option.value)}
+                    aria-pressed={form.would_recommend === option.value}
+                    onClick={() =>
+                      update(
+                        "would_recommend",
+                        form.would_recommend === option.value ? null : option.value,
+                      )
+                    }
                     className={`rounded-md border px-4 py-2 text-sm font-medium transition ${
                       form.would_recommend === option.value
                         ? "border-primary bg-primary text-primary-foreground"
@@ -292,31 +374,36 @@ function FeedbackPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="most_valuable">What was most valuable for you?</Label>
+              <Label htmlFor="most_valuable">What was most valuable for you? (optional)</Label>
               <Textarea
                 id="most_valuable"
                 maxLength={1000}
                 value={form.most_valuable}
                 onChange={(e) => update("most_valuable", e.target.value)}
               />
+              <FieldError id="most_valuable-error" message={errors.most_valuable} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="improvements">What should ESWA improve?</Label>
+              <Label htmlFor="improvements">What should ESWA improve? (optional)</Label>
               <Textarea
                 id="improvements"
                 maxLength={1000}
                 value={form.improvements}
                 onChange={(e) => update("improvements", e.target.value)}
               />
+              <FieldError id="improvements-error" message={errors.improvements} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="future_topics">Which topics would help you most next?</Label>
+              <Label htmlFor="future_topics">
+                Which topics would help you most next? (optional)
+              </Label>
               <Textarea
                 id="future_topics"
                 maxLength={1000}
                 value={form.future_topics}
                 onChange={(e) => update("future_topics", e.target.value)}
               />
+              <FieldError id="future_topics-error" message={errors.future_topics} />
             </div>
 
             <Button type="submit" size="lg" disabled={submit.isPending}>

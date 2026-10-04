@@ -14,15 +14,23 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { programmes } from "@/lib/eswa-content";
+import { friendlyError } from "@/lib/friendly-errors";
 import { fetchRegistrationCounts, type Registration, type Workshop } from "@/lib/workshops";
 
 export const Route = createFileRoute("/calendar")({
   head: () => ({
     meta: [
       { title: "Workshop calendar — ESWA" },
-      { name: "description", content: "Month-by-month calendar of ESWA educator wellbeing workshops with dates, times, venues and live RSVP numbers." },
+      {
+        name: "description",
+        content:
+          "Month-by-month calendar of ESWA educator wellbeing workshops with dates, times, venues and live RSVP numbers.",
+      },
       { property: "og:title", content: "Workshop calendar — ESWA" },
-      { property: "og:description", content: "See every upcoming ESWA workshop on one calendar and reserve your seat." },
+      {
+        property: "og:description",
+        content: "See every upcoming ESWA workshop on one calendar and reserve your seat.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -37,7 +45,8 @@ function toLocalInput(iso: string) {
   const d = new Date(iso);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
-const timeOf = (iso: string) => new Date(iso).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
+const timeOf = (iso: string) =>
+  new Date(iso).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
 
 function useIsAdmin() {
   const [uid, setUid] = useState<string | null>(null);
@@ -70,6 +79,33 @@ type Draft = {
   capacity: number;
   is_published: boolean;
 };
+
+// Returns a plain-English problem, or null when the workshop details are fine.
+function draftProblem(d: Draft): string | null {
+  const title = d.title.trim();
+  if (title.length < 3) return "Please give the workshop a title (at least 3 letters).";
+  if (title.length > 150) return "Please keep the title under 150 characters.";
+  if (!d.starts_at || Number.isNaN(new Date(d.starts_at).getTime())) {
+    return "Please choose the date and start time.";
+  }
+  if (!d.id && new Date(d.starts_at).getTime() < Date.now()) {
+    return "That date has already passed. Please choose a future date and time.";
+  }
+  if (
+    !Number.isInteger(d.duration_minutes) ||
+    d.duration_minutes < 15 ||
+    d.duration_minutes > 720
+  ) {
+    return "Duration must be a whole number of minutes between 15 and 720.";
+  }
+  if (!Number.isInteger(d.capacity) || d.capacity < 1 || d.capacity > 1000) {
+    return "Seats must be a whole number between 1 and 1000.";
+  }
+  if (!d.location.trim()) return "Please say where the workshop takes place (or 'Online').";
+  if (d.location.length > 200) return "Please keep the location under 200 characters.";
+  if (d.description.length > 2000) return "Please keep the description under 2000 characters.";
+  return null;
+}
 
 function emptyDraft(date: Date): Draft {
   const d = new Date(date);
@@ -105,7 +141,10 @@ function CalendarPage() {
       return data as Workshop[];
     },
   });
-  const { data: counts } = useQuery({ queryKey: ["workshops", "counts"], queryFn: fetchRegistrationCounts });
+  const { data: counts } = useQuery({
+    queryKey: ["workshops", "counts"],
+    queryFn: fetchRegistrationCounts,
+  });
 
   // Live sync: refresh counts and RSVP lists when registrations change
   useEffect(() => {
@@ -155,9 +194,9 @@ function CalendarPage() {
         programme: d.programme.trim() || "School Wellbeing Workshops",
         facilitator: d.facilitator.trim() || null,
         starts_at: new Date(d.starts_at).toISOString(),
-        duration_minutes: Number(d.duration_minutes) || 90,
-        location: d.location.trim() || "Online (Microsoft Teams)",
-        capacity: Number(d.capacity) || 50,
+        duration_minutes: d.duration_minutes,
+        location: d.location.trim(),
+        capacity: d.capacity,
         is_published: d.is_published,
       };
       const res = d.id
@@ -170,7 +209,8 @@ function CalendarPage() {
       setDraft(null);
       refresh();
     },
-    onError: () => toast.error("Could not save the workshop."),
+    onError: (error) =>
+      toast.error(friendlyError(error, "We couldn't save the workshop. Please try again.")),
   });
 
   const remove = useMutation({
@@ -183,7 +223,8 @@ function CalendarPage() {
       setSelected(null);
       refresh();
     },
-    onError: () => toast.error("Remove its RSVPs first, or try again."),
+    onError: (error) =>
+      toast.error(friendlyError(error, "We couldn't remove the workshop. Please try again.")),
   });
 
   const today = dayKey(new Date());
@@ -210,20 +251,34 @@ function CalendarPage() {
 
       <section className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-4 flex items-center justify-between">
-          <Button variant="ghost" size="icon" aria-label="Previous month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Previous month"
+            onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
+          >
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <h2 className="font-display text-xl">
             {month.toLocaleDateString("en-ZA", { month: "long", year: "numeric" })}
           </h2>
-          <Button variant="ghost" size="icon" aria-label="Next month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Next month"
+            onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
+          >
             <ChevronRight className="h-5 w-5" />
           </Button>
         </div>
 
         <div className="card-surface hidden overflow-hidden md:block">
           <div className="grid grid-cols-7 border-b border-border bg-secondary/50 text-center text-xs font-medium text-muted-foreground">
-            {WEEKDAYS.map((d) => <div key={d} className="py-2">{d}</div>)}
+            {WEEKDAYS.map((d) => (
+              <div key={d} className="py-2">
+                {d}
+              </div>
+            ))}
           </div>
           <div className="grid grid-cols-7">
             {cells.map((d) => {
@@ -235,18 +290,25 @@ function CalendarPage() {
                   onClick={() => isAdmin && setDraft(emptyDraft(d))}
                   className={`min-h-28 border-b border-r border-border p-1.5 text-xs ${inMonth ? "" : "bg-muted/40 text-muted-foreground"} ${isAdmin ? "cursor-pointer hover:bg-secondary/40" : ""}`}
                 >
-                  <div className={`mb-1 inline-flex h-6 w-6 items-center justify-center rounded-full ${dayKey(d) === today ? "bg-primary text-primary-foreground" : ""}`}>
+                  <div
+                    className={`mb-1 inline-flex h-6 w-6 items-center justify-center rounded-full ${dayKey(d) === today ? "bg-primary text-primary-foreground" : ""}`}
+                  >
                     {d.getDate()}
                   </div>
                   <div className="space-y-1">
                     {events.map((w) => (
                       <button
                         key={w.id}
-                        onClick={(e) => { e.stopPropagation(); setSelected(w); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelected(w);
+                        }}
                         className={`block w-full truncate rounded-md px-1.5 py-1 text-left font-medium ${w.is_published ? "bg-primary/10 text-primary hover:bg-primary/20" : "border border-dashed border-border text-muted-foreground"}`}
                       >
                         {timeOf(w.starts_at)} {w.title}
-                        <span className="ml-1 opacity-70">· {counts?.get(w.id) ?? 0}/{w.capacity}</span>
+                        <span className="ml-1 opacity-70">
+                          · {counts?.get(w.id) ?? 0}/{w.capacity}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -259,12 +321,22 @@ function CalendarPage() {
         {/* Agenda list (mobile + summary) */}
         <div className="space-y-3 md:mt-8">
           <h3 className="font-display text-lg md:text-base">This month</h3>
-          {monthEvents.length === 0 && <p className="text-sm text-muted-foreground">No workshops scheduled this month.</p>}
+          {monthEvents.length === 0 && (
+            <p className="text-sm text-muted-foreground">No workshops scheduled this month.</p>
+          )}
           {monthEvents.map((w) => (
-            <button key={w.id} onClick={() => setSelected(w)} className="card-surface flex w-full items-start gap-4 p-4 text-left">
+            <button
+              key={w.id}
+              onClick={() => setSelected(w)}
+              className="card-surface flex w-full items-start gap-4 p-4 text-left"
+            >
               <div className="w-12 shrink-0 text-center">
-                <div className="text-xs uppercase text-muted-foreground">{new Date(w.starts_at).toLocaleDateString("en-ZA", { month: "short" })}</div>
-                <div className="font-display text-2xl text-primary">{new Date(w.starts_at).getDate()}</div>
+                <div className="text-xs uppercase text-muted-foreground">
+                  {new Date(w.starts_at).toLocaleDateString("en-ZA", { month: "short" })}
+                </div>
+                <div className="font-display text-2xl text-primary">
+                  {new Date(w.starts_at).getDate()}
+                </div>
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -272,9 +344,18 @@ function CalendarPage() {
                   {!w.is_published && <Badge variant="outline">Draft</Badge>}
                 </div>
                 <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{timeOf(w.starts_at)} · {w.duration_minutes} min</span>
-                  <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{w.location}</span>
-                  <span className="flex items-center gap-1"><Users className="h-3 w-3" />{counts?.get(w.id) ?? 0} of {w.capacity} RSVPs</span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {timeOf(w.starts_at)} · {w.duration_minutes} min
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {w.location}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Users className="h-3 w-3" />
+                    {counts?.get(w.id) ?? 0} of {w.capacity} RSVPs
+                  </span>
                 </p>
               </div>
             </button>
@@ -285,14 +366,23 @@ function CalendarPage() {
       <EventDialog
         workshop={selected}
         isAdmin={isAdmin}
-        count={selected ? counts?.get(selected.id) ?? 0 : 0}
+        count={selected ? (counts?.get(selected.id) ?? 0) : 0}
         onClose={() => setSelected(null)}
         onEdit={(w) => {
           setSelected(null);
-          setDraft({ ...w, facilitator: w.facilitator ?? "", starts_at: toLocalInput(w.starts_at) });
+          setDraft({
+            ...w,
+            facilitator: w.facilitator ?? "",
+            starts_at: toLocalInput(w.starts_at),
+          });
         }}
         onDelete={(id) => {
-          if (confirm("Delete this workshop?")) remove.mutate(id);
+          const taken = counts?.get(id) ?? 0;
+          const warning =
+            taken > 0
+              ? `Deleting this workshop will also permanently delete its ${taken} registration${taken === 1 ? "" : "s"}. If you only want to hide it, cancel and switch off "Visible to the public" instead.\n\nDelete it anyway?`
+              : "Delete this workshop? This cannot be undone.";
+          if (confirm(warning)) remove.mutate(id);
         }}
       />
 
@@ -304,29 +394,84 @@ function CalendarPage() {
           {draft && (
             <form
               className="space-y-3"
+              noValidate
               onSubmit={(e) => {
                 e.preventDefault();
-                if (!draft.title.trim()) {
-                  toast.error("Please add a title.");
+                const problem = draftProblem(draft);
+                if (problem) {
+                  toast.error(problem);
                   return;
                 }
                 save.mutate(draft);
               }}
             >
-              <Field label="Title"><Input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} required /></Field>
-              <Field label="Programme"><Input value={draft.programme} onChange={(e) => setDraft({ ...draft, programme: e.target.value })} /></Field>
+              <Field label="Title">
+                <Input
+                  value={draft.title}
+                  onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                  required
+                />
+              </Field>
+              <Field label="Programme">
+                <Input
+                  value={draft.programme}
+                  onChange={(e) => setDraft({ ...draft, programme: e.target.value })}
+                />
+              </Field>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Date & start time"><Input type="datetime-local" value={draft.starts_at} onChange={(e) => setDraft({ ...draft, starts_at: e.target.value })} required /></Field>
-                <Field label="Duration (minutes)"><Input type="number" min={15} value={draft.duration_minutes} onChange={(e) => setDraft({ ...draft, duration_minutes: Number(e.target.value) })} /></Field>
+                <Field label="Date & start time">
+                  <Input
+                    type="datetime-local"
+                    value={draft.starts_at}
+                    onChange={(e) => setDraft({ ...draft, starts_at: e.target.value })}
+                    required
+                  />
+                </Field>
+                <Field label="Duration (minutes)">
+                  <Input
+                    type="number"
+                    min={15}
+                    value={draft.duration_minutes}
+                    onChange={(e) =>
+                      setDraft({ ...draft, duration_minutes: Number(e.target.value) })
+                    }
+                  />
+                </Field>
               </div>
-              <Field label="Location"><Input value={draft.location} onChange={(e) => setDraft({ ...draft, location: e.target.value })} /></Field>
+              <Field label="Location">
+                <Input
+                  value={draft.location}
+                  onChange={(e) => setDraft({ ...draft, location: e.target.value })}
+                />
+              </Field>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Facilitator"><Input value={draft.facilitator} onChange={(e) => setDraft({ ...draft, facilitator: e.target.value })} /></Field>
-                <Field label="Seats"><Input type="number" min={1} value={draft.capacity} onChange={(e) => setDraft({ ...draft, capacity: Number(e.target.value) })} /></Field>
+                <Field label="Facilitator">
+                  <Input
+                    value={draft.facilitator}
+                    onChange={(e) => setDraft({ ...draft, facilitator: e.target.value })}
+                  />
+                </Field>
+                <Field label="Seats">
+                  <Input
+                    type="number"
+                    min={1}
+                    value={draft.capacity}
+                    onChange={(e) => setDraft({ ...draft, capacity: Number(e.target.value) })}
+                  />
+                </Field>
               </div>
-              <Field label="Description"><Textarea rows={3} value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} /></Field>
+              <Field label="Description">
+                <Textarea
+                  rows={3}
+                  value={draft.description}
+                  onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+                />
+              </Field>
               <label className="flex items-center gap-3 text-sm">
-                <Switch checked={draft.is_published} onCheckedChange={(v) => setDraft({ ...draft, is_published: v })} />
+                <Switch
+                  checked={draft.is_published}
+                  onCheckedChange={(v) => setDraft({ ...draft, is_published: v })}
+                />
                 Visible to the public (open for RSVPs)
               </label>
               <Button type="submit" className="w-full" disabled={save.isPending}>
@@ -350,7 +495,12 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function EventDialog({
-  workshop, isAdmin, count, onClose, onEdit, onDelete,
+  workshop,
+  isAdmin,
+  count,
+  onClose,
+  onEdit,
+  onDelete,
 }: {
   workshop: Workshop | null;
   isAdmin: boolean;
@@ -382,11 +532,25 @@ function EventDialog({
               <DialogTitle>{workshop.title}</DialogTitle>
             </DialogHeader>
             <div className="space-y-2 text-sm text-muted-foreground">
-              <p className="flex items-center gap-2"><Clock className="h-4 w-4 text-primary" />
-                {new Date(workshop.starts_at).toLocaleString("en-ZA", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })} · {workshop.duration_minutes} min
+              <p className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-primary" />
+                {new Date(workshop.starts_at).toLocaleString("en-ZA", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}{" "}
+                · {workshop.duration_minutes} min
               </p>
-              <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" />{workshop.location}</p>
-              <p className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" />{count} of {workshop.capacity} seats taken</p>
+              <p className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary" />
+                {workshop.location}
+              </p>
+              <p className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                {count} of {workshop.capacity} seats taken
+              </p>
               {workshop.description && <p className="pt-2">{workshop.description}</p>}
             </div>
 
@@ -401,7 +565,10 @@ function EventDialog({
                       <li key={r.id} className="flex items-center justify-between gap-2 px-3 py-2">
                         <div className="min-w-0">
                           <div className="truncate font-medium">{r.full_name}</div>
-                          <div className="truncate text-xs text-muted-foreground">{r.email}{r.school ? ` · ${r.school}` : ""}</div>
+                          <div className="truncate text-xs text-muted-foreground">
+                            {r.email}
+                            {r.school ? ` · ${r.school}` : ""}
+                          </div>
                         </div>
                         {r.attended && <Badge variant="secondary">Attended</Badge>}
                       </li>
@@ -414,12 +581,16 @@ function EventDialog({
             <div className="mt-4 flex flex-wrap gap-2">
               {workshop.is_published && new Date(workshop.starts_at) > new Date() && (
                 <Button asChild>
-                  <Link to="/workshops/$workshopId" params={{ workshopId: workshop.id }}>RSVP</Link>
+                  <Link to="/workshops/$workshopId" params={{ workshopId: workshop.id }}>
+                    RSVP
+                  </Link>
                 </Button>
               )}
               {isAdmin && (
                 <>
-                  <Button variant="secondary" onClick={() => onEdit(workshop)}>Edit</Button>
+                  <Button variant="secondary" onClick={() => onEdit(workshop)}>
+                    Edit
+                  </Button>
                   <Button variant="ghost" onClick={() => onDelete(workshop.id)}>
                     <Trash2 className="h-4 w-4" /> Delete
                   </Button>

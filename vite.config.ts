@@ -27,6 +27,10 @@ export default defineConfig({
             "X-Frame-Options": "DENY",
             "Referrer-Policy": "strict-origin-when-cross-origin",
             "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+            // Blocks other sites from framing ours, injecting a <base> tag, posting our
+            // forms elsewhere, or loading plugins. A full script policy comes later.
+            "Content-Security-Policy":
+              "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'",
             ...(isProduction
               ? {
                   "Strict-Transport-Security": "max-age=31536000; includeSubDomains",

@@ -52,7 +52,16 @@ function Chat() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
-    onError: () => toast.error("The wellness helper is unavailable right now. Please try again."),
+    onError: (error) => {
+      const text = error instanceof Error ? error.message : "";
+      // Our server's messages are written for people. Anything else is hidden.
+      const friendly = /wellness helper|quickly|too long|type a message|didn't reach/i.test(text);
+      toast.error(
+        friendly && text.length < 300
+          ? text
+          : "The wellness helper is unavailable right now. Please try again in a moment.",
+      );
+    },
   });
 
   const busy = status === "submitted" || status === "streaming";
@@ -105,9 +114,7 @@ function Chat() {
               <Message key={message.id} from={message.role}>
                 <MessageContent>
                   <MessageResponse>
-                    {message.parts
-                      .map((part) => (part.type === "text" ? part.text : ""))
-                      .join("")}
+                    {message.parts.map((part) => (part.type === "text" ? part.text : "")).join("")}
                   </MessageResponse>
                 </MessageContent>
               </Message>

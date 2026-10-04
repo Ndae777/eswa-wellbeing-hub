@@ -37,6 +37,7 @@ export async function fetchRegistrationCounts() {
 
 export function formatWorkshopDate(value: string) {
   return new Date(value).toLocaleString("en-ZA", {
+    timeZone: "Africa/Johannesburg",
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -48,6 +49,7 @@ export function formatWorkshopDate(value: string) {
 
 export function formatDateOnly(value: string) {
   return new Date(value).toLocaleDateString("en-ZA", {
+    timeZone: "Africa/Johannesburg",
     day: "numeric",
     month: "short",
     year: "numeric",

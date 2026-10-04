@@ -166,31 +166,36 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const ip =
-          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-          request.headers.get("x-real-ip") ??
-          "anonymous";
+        const { clientAddress } = await import("@/lib/rate-limit.server");
+        const ip = clientAddress(request);
         if (isRateLimited(ip)) {
-          return new Response("Too many requests. Please wait a minute and try again.", {
-            status: 429,
-            headers: { "retry-after": "60" },
-          });
+          return new Response(
+            "You're sending messages quickly. Please wait a minute and try again.",
+            {
+              status: 429,
+              headers: { "retry-after": "60" },
+            },
+          );
         }
 
         let body: { messages?: unknown };
         try {
           body = (await request.json()) as { messages?: unknown };
         } catch {
-          return new Response("Invalid JSON body", { status: 400 });
+          return new Response("That message didn't reach us properly. Please try again.", {
+            status: 400,
+          });
         }
 
         if (JSON.stringify(body).length > 100_000) {
-          return new Response("Payload too large", { status: 413 });
+          return new Response("That conversation is too long. Please start a new chat.", {
+            status: 413,
+          });
         }
 
         const messages = sanitizeMessages(body.messages);
         if (!messages) {
-          return new Response("A user message is required", { status: 400 });
+          return new Response("Please type a message first.", { status: 400 });
         }
 
         // Crisis messages get a fixed, vetted reply and never depend on the model.
@@ -201,9 +206,11 @@ export const Route = createFileRoute("/api/chat")({
 
         const apiKey = process.env["GEMINI_API_KEY"];
         if (!apiKey) {
-          return new Response("AI is not configured. Set GEMINI_API_KEY on the server.", {
-            status: 503,
-          });
+          console.error("[/api/chat] GEMINI_API_KEY is not set on the server.");
+          return new Response(
+            "The wellness helper isn't available right now. Please call SADAG 0800 456 789 if you need support now.",
+            { status: 503 },
+          );
         }
 
         if (dailyCapReached()) {
@@ -229,7 +236,10 @@ export const Route = createFileRoute("/api/chat")({
                 safetySettings: [
                   { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
                   { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-                  { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                  {
+                    category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    threshold: "BLOCK_MEDIUM_AND_ABOVE",
+                  },
                   { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
                 ],
               },

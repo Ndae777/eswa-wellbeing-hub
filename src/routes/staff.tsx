@@ -12,12 +12,19 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { friendlyError } from "@/lib/friendly-errors";
 import { formatDateOnly, formatWorkshopDate } from "@/lib/workshops";
-
 
 // Escape a value for inclusion in an XML spreadsheet document.
 function xmlEscape(value: unknown): string {
-  return String(value ?? "")
+  // Control characters are not allowed in XML and would corrupt the Excel file.
+  const printable = Array.from(String(value ?? ""))
+    .filter((ch) => {
+      const code = ch.charCodeAt(0);
+      return code === 9 || code === 10 || code === 13 || code >= 32;
+    })
+    .join("");
+  return printable
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -89,9 +96,26 @@ function SignIn() {
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (!email.trim()) {
+      toast.error("Please type your work email address.");
+      return;
+    }
+    if (!password) {
+      toast.error("Please type your password.");
+      return;
+    }
     setPending(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) toast.error(error.message);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (error) {
+        toast.error(friendlyError(error, "We couldn't sign you in. Please try again."));
+      }
+    } catch (error) {
+      toast.error(friendlyError(error, "We couldn't sign you in. Please try again."));
+    }
     setPending(false);
   }
 
@@ -101,12 +125,21 @@ function SignIn() {
       return;
     }
     setPending(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        toast.error(friendlyError(error, "We couldn't send the reset email. Please try again."));
+      } else {
+        toast.success(
+          "If that email has an account, a reset link is on its way. It can take a few minutes. Please check your spam folder too.",
+        );
+      }
+    } catch (error) {
+      toast.error(friendlyError(error, "We couldn't send the reset email. Please try again."));
+    }
     setPending(false);
-    if (error) toast.error(error.message);
-    else toast.success("If that email has an account, a reset link is on its way.");
   }
 
   return (
@@ -133,7 +166,6 @@ function SignIn() {
             id="password"
             type="password"
             required
-            minLength={8}
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -165,7 +197,12 @@ type Workshop = Tables<"workshops">;
 function Dashboard() {
   const queryClient = useQueryClient();
 
-  const { data: isAdmin, isLoading: checkingRole } = useQuery({
+  const {
+    data: isAdmin,
+    isLoading: checkingRole,
+    isError: roleCheckFailed,
+    refetch: recheckRole,
+  } = useQuery({
     queryKey: ["is-admin"],
     queryFn: async () => {
       const { data: userData } = await supabase.auth.getUser();
@@ -179,7 +216,11 @@ function Dashboard() {
     },
   });
 
-  const { data } = useQuery({
+  const {
+    data,
+    isError: dataFailed,
+    refetch: reloadData,
+  } = useQuery({
     queryKey: ["staff-data"],
     enabled: isAdmin === true,
     queryFn: async () => {
@@ -205,7 +246,8 @@ function Dashboard() {
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["staff-data"] }),
-    onError: () => toast.error("Could not update attendance."),
+    onError: (error) =>
+      toast.error(friendlyError(error, "We couldn't update attendance. Please try again.")),
   });
 
   async function signOut() {
@@ -246,7 +288,7 @@ function Dashboard() {
     });
 
     const feedbackRows = data.feedback.map((row) => ({
-      Workshop: row.workshop_id ? titleById.get(row.workshop_id) ?? "" : "General",
+      Workshop: row.workshop_id ? (titleById.get(row.workshop_id) ?? "") : "General",
       Name: row.full_name ?? "Anonymous",
       Email: row.email ?? "",
       School: row.school ?? "",
@@ -286,7 +328,25 @@ function Dashboard() {
   }
 
   if (checkingRole) {
-    return <div className="mx-auto max-w-md px-4 py-20 text-sm text-muted-foreground">Checking access…</div>;
+    return (
+      <div className="mx-auto max-w-md px-4 py-20 text-sm text-muted-foreground">
+        Checking access…
+      </div>
+    );
+  }
+
+  if (roleCheckFailed) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-16 text-center" role="alert">
+        <h1 className="font-display text-xl">We couldn't check your access</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          This is usually a weak internet connection. Please try again.
+        </p>
+        <Button className="mt-5" onClick={() => void recheckRole()}>
+          Try again
+        </Button>
+      </div>
+    );
   }
 
   if (!isAdmin) {
@@ -336,6 +396,20 @@ function Dashboard() {
           </Button>
         </div>
       </div>
+
+      {dataFailed && (
+        <div
+          className="card-surface mt-6 flex flex-wrap items-center justify-between gap-3 p-4"
+          role="alert"
+        >
+          <p className="text-sm">
+            We couldn't load the latest records. The numbers below may be incomplete.
+          </p>
+          <Button size="sm" onClick={() => void reloadData()}>
+            Try again
+          </Button>
+        </div>
+      )}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[

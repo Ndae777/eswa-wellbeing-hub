@@ -19,7 +19,9 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as StaffRouteImport } from './routes/staff'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiFeedbackRouteImport } from './routes/api/feedback'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiRegisterRouteImport } from './routes/api/register'
 import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
 import { Route as WorkshopsWorkshopIdRouteImport } from './routes/workshops.$workshopId'
 
@@ -73,9 +75,19 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiFeedbackRoute = ApiFeedbackRouteImport.update({
+  id: '/api/feedback',
+  path: '/api/feedback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRegisterRoute = ApiRegisterRouteImport.update({
+  id: '/api/register',
+  path: '/api/register',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WorkshopsIndexRoute = WorkshopsIndexRouteImport.update({
@@ -100,7 +112,9 @@ export interface FileRoutesByFullPath {
   '/resources': typeof ResourcesRoute
   '/staff': typeof StaffRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/feedback': typeof ApiFeedbackRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/register': typeof ApiRegisterRoute
   '/workshops/$workshopId': typeof WorkshopsWorkshopIdRoute
   '/workshops/': typeof WorkshopsIndexRoute
 }
@@ -115,7 +129,9 @@ export interface FileRoutesByTo {
   '/resources': typeof ResourcesRoute
   '/staff': typeof StaffRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/feedback': typeof ApiFeedbackRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/register': typeof ApiRegisterRoute
   '/workshops/$workshopId': typeof WorkshopsWorkshopIdRoute
   '/workshops': typeof WorkshopsIndexRoute
 }
@@ -131,7 +147,9 @@ export interface FileRoutesById {
   '/resources': typeof ResourcesRoute
   '/staff': typeof StaffRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/feedback': typeof ApiFeedbackRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/register': typeof ApiRegisterRoute
   '/workshops/$workshopId': typeof WorkshopsWorkshopIdRoute
   '/workshops/': typeof WorkshopsIndexRoute
 }
@@ -148,7 +166,9 @@ export interface FileRouteTypes {
     | '/resources'
     | '/staff'
     | '/api/chat'
+    | '/api/feedback'
     | '/api/health'
+    | '/api/register'
     | '/workshops/$workshopId'
     | '/workshops/'
   fileRoutesByTo: FileRoutesByTo
@@ -163,7 +183,9 @@ export interface FileRouteTypes {
     | '/resources'
     | '/staff'
     | '/api/chat'
+    | '/api/feedback'
     | '/api/health'
+    | '/api/register'
     | '/workshops/$workshopId'
     | '/workshops'
   id:
@@ -178,7 +200,9 @@ export interface FileRouteTypes {
     | '/resources'
     | '/staff'
     | '/api/chat'
+    | '/api/feedback'
     | '/api/health'
+    | '/api/register'
     | '/workshops/$workshopId'
     | '/workshops/'
   fileRoutesById: FileRoutesById
@@ -194,7 +218,9 @@ export interface RootRouteChildren {
   ResourcesRoute: typeof ResourcesRoute
   StaffRoute: typeof StaffRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiFeedbackRoute: typeof ApiFeedbackRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiRegisterRoute: typeof ApiRegisterRoute
   WorkshopsWorkshopIdRoute: typeof WorkshopsWorkshopIdRoute
   WorkshopsIndexRoute: typeof WorkshopsIndexRoute
 }
@@ -271,11 +297,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/feedback': {
+      id: '/api/feedback'
+      path: '/api/feedback'
+      fullPath: '/api/feedback'
+      preLoaderRoute: typeof ApiFeedbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/health': {
       id: '/api/health'
       path: '/api/health'
       fullPath: '/api/health'
       preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/register': {
+      id: '/api/register'
+      path: '/api/register'
+      fullPath: '/api/register'
+      preLoaderRoute: typeof ApiRegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/workshops/': {
@@ -306,7 +346,9 @@ const rootRouteChildren: RootRouteChildren = {
   ResourcesRoute: ResourcesRoute,
   StaffRoute: StaffRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiFeedbackRoute: ApiFeedbackRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiRegisterRoute: ApiRegisterRoute,
   WorkshopsWorkshopIdRoute: WorkshopsWorkshopIdRoute,
   WorkshopsIndexRoute: WorkshopsIndexRoute,
 }

@@ -6,7 +6,11 @@ import { SiteLayout } from "@/components/site/site-layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchRegistrationCounts, fetchUpcomingWorkshops, formatWorkshopDate } from "@/lib/workshops";
+import {
+  fetchRegistrationCounts,
+  fetchUpcomingWorkshops,
+  formatWorkshopDate,
+} from "@/lib/workshops";
 
 export const Route = createFileRoute("/workshops/")({
   head: () => ({
@@ -28,7 +32,12 @@ export const Route = createFileRoute("/workshops/")({
 });
 
 function Workshops() {
-  const { data: workshops, isLoading } = useQuery({
+  const {
+    data: workshops,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["workshops", "upcoming"],
     queryFn: () => fetchUpcomingWorkshops(),
   });
@@ -44,8 +53,7 @@ function Workshops() {
           <h1 className="text-3xl sm:text-4xl">Workshops</h1>
           <p className="mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
             Interactive, evidence-informed sessions for educators and school management teams.
-            Registration is free and takes under a minute — you will receive a confirmation from
-            ESWA before the session.
+            Registration is free and takes under a minute. No account is needed.
           </p>
         </div>
       </section>
@@ -55,6 +63,18 @@ function Workshops() {
           <div className="space-y-4">
             <Skeleton className="h-40 w-full rounded-xl" />
             <Skeleton className="h-40 w-full rounded-xl" />
+          </div>
+        )}
+
+        {isError && (
+          <div className="card-surface p-8 text-center" role="alert">
+            <h2 className="font-display text-lg">We couldn't load the workshops</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              This is usually a weak internet connection. Your details are safe. Please try again.
+            </p>
+            <Button className="mt-4" onClick={() => void refetch()}>
+              Try again
+            </Button>
           </div>
         )}
 
@@ -95,9 +115,9 @@ function Workshops() {
                 </div>
                 <p className="mt-3 text-sm text-muted-foreground">{workshop.description}</p>
                 <div className="mt-5">
-                  <Button asChild disabled={left === 0}>
+                  <Button asChild variant={left === 0 ? "outline" : "default"}>
                     <Link to="/workshops/$workshopId" params={{ workshopId: workshop.id }}>
-                      {left === 0 ? "Join the waiting list" : "RSVP now"}
+                      {left === 0 ? "View details" : "RSVP now"}
                     </Link>
                   </Button>
                 </div>
