@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AlertTriangle, Phone } from "lucide-react";
 
+import { PageBanner } from "@/components/site/site-images";
 import { SiteLayout } from "@/components/site/site-layout";
 import { Button } from "@/components/ui/button";
 import { helplines, selfHelpGuides, warningSigns } from "@/lib/eswa-content";
@@ -27,7 +28,7 @@ export const Route = createFileRoute("/resources")({
 function Resources() {
   return (
     <SiteLayout>
-      <section className="bg-hero-gradient">
+      <PageBanner slot="page-resources">
         <div className="mx-auto max-w-4xl px-4 py-12">
           <h1 className="text-3xl sm:text-4xl">Mental Health Resources</h1>
           <p className="mt-3 text-sm text-muted-foreground sm:text-base">
@@ -35,7 +36,7 @@ function Resources() {
             South African services are free and confidential.
           </p>
         </div>
-      </section>
+      </PageBanner>
 
       <section className="mx-auto max-w-4xl px-4 py-10">
         <h2 className="font-display text-2xl">Helplines and organisations</h2>

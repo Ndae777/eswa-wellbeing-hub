@@ -5,6 +5,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { FieldError } from "@/components/site/field-error";
+import { ScaleInput } from "@/components/site/scale-input";
+import { PageBanner } from "@/components/site/site-images";
 import { SiteLayout } from "@/components/site/site-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,54 +68,6 @@ const initial: FormState = {
   improvements: "",
   future_topics: "",
 };
-
-function Scale({
-  id,
-  label,
-  hint,
-  max,
-  value,
-  onChange,
-  error,
-}: {
-  id: string;
-  label: string;
-  hint: string;
-  max: number;
-  value: number | null;
-  onChange: (value: number | null) => void;
-  error?: string | undefined;
-}) {
-  return (
-    <div className="space-y-2" id={id} tabIndex={-1}>
-      <Label id={`${id}-label`}>{label}</Label>
-      <p className="text-xs text-muted-foreground">{hint}</p>
-      <div
-        role="group"
-        aria-labelledby={`${id}-label`}
-        aria-describedby={error ? `${id}-error` : undefined}
-        className="flex flex-wrap gap-2"
-      >
-        {Array.from({ length: max }, (_, index) => index + 1).map((option) => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => onChange(value === option ? null : option)}
-            aria-pressed={value === option}
-            className={`h-10 w-10 rounded-md border text-sm font-medium transition ${
-              value === option
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-input bg-background text-foreground hover:bg-accent"
-            }`}
-          >
-            {option}
-          </button>
-        ))}
-      </div>
-      <FieldError id={`${id}-error`} message={error} />
-    </div>
-  );
-}
 
 const SERVER_MESSAGES: { [code: string]: string } = {
   too_many: "You've sent a few responses in a row. Please wait a few minutes and try again.",
@@ -188,7 +142,7 @@ function FeedbackPage() {
 
   return (
     <SiteLayout>
-      <section className="bg-hero-gradient">
+      <PageBanner slot="page-feedback">
         <div className="mx-auto max-w-3xl px-4 py-12">
           <h1 className="text-3xl sm:text-4xl">Your voice shapes our work</h1>
           <p className="mt-3 text-sm text-muted-foreground sm:text-base">
@@ -196,7 +150,7 @@ function FeedbackPage() {
             overall rating (marked *).
           </p>
         </div>
-      </section>
+      </PageBanner>
 
       <section className="mx-auto max-w-3xl px-4 py-10 pb-16">
         {done ? (
@@ -304,38 +258,42 @@ function FeedbackPage() {
               <FieldError id="workshop_id-error" message={errors.workshop_id} />
             </div>
 
-            <Scale
+            <ScaleInput
               id="overall_rating"
               label="Overall, how would you rate your experience with ESWA? *"
-              hint="1 = poor, 5 = excellent"
+              large
+              stepLabels={["Poor", "Fair", "Good", "Very good", "Excellent"]}
               max={5}
               value={form.overall_rating}
               onChange={(value) => update("overall_rating", value)}
               error={errors.overall_rating}
             />
-            <Scale
+            <ScaleInput
               id="stress_level"
               label="How stressed do you feel in your work at the moment? (optional)"
-              hint="1 = very calm, 10 = completely overwhelmed"
+              lowLabel="1 = very calm"
+              highLabel="10 = overwhelmed"
               max={10}
               value={form.stress_level}
               onChange={(value) => update("stress_level", value)}
               error={errors.stress_level}
             />
             <div className="space-y-5">
-              <Scale
+              <ScaleInput
                 id="wellbeing_before"
                 label="Your wellbeing BEFORE the workshop (optional)"
-                hint="1 = very low, 10 = thriving"
+                lowLabel="1 = very low"
+                highLabel="10 = thriving"
                 max={10}
                 value={form.wellbeing_before}
                 onChange={(value) => update("wellbeing_before", value)}
                 error={errors.wellbeing}
               />
-              <Scale
+              <ScaleInput
                 id="wellbeing_after"
                 label="Your wellbeing AFTER the workshop (optional)"
-                hint="1 = very low, 10 = thriving"
+                lowLabel="1 = very low"
+                highLabel="10 = thriving"
                 max={10}
                 value={form.wellbeing_after}
                 onChange={(value) => update("wellbeing_after", value)}
@@ -361,10 +319,10 @@ function FeedbackPage() {
                         form.would_recommend === option.value ? null : option.value,
                       )
                     }
-                    className={`rounded-md border px-4 py-2 text-sm font-medium transition ${
+                    className={`rounded-full border-2 px-6 py-2 text-sm font-medium transition ${
                       form.would_recommend === option.value
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-input bg-background hover:bg-accent"
+                        ? "border-primary bg-primary text-primary-foreground shadow-lift"
+                        : "border-primary/25 bg-background hover:border-primary/60 hover:bg-accent"
                     }`}
                   >
                     {option.label}

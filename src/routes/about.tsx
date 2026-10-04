@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 
+import { PageBanner, WideImage } from "@/components/site/site-images";
 import { SiteLayout } from "@/components/site/site-layout";
 import { Button } from "@/components/ui/button";
 import { ESWA, outcomes, pillars, programmes, values } from "@/lib/eswa-content";
@@ -28,7 +29,7 @@ export const Route = createFileRoute("/about")({
 function About() {
   return (
     <SiteLayout>
-      <section className="bg-hero-gradient">
+      <PageBanner slot="page-about">
         <div className="mx-auto max-w-4xl px-4 py-14">
           <h1 className="text-3xl sm:text-4xl">About ESWA</h1>
           <p className="mt-4 text-base text-muted-foreground sm:text-lg">
@@ -43,6 +44,10 @@ function About() {
             success.
           </p>
         </div>
+      </PageBanner>
+
+      <section className="mx-auto max-w-4xl px-4 pt-12">
+        <WideImage slot="about-story" />
       </section>
 
       <section className="mx-auto max-w-4xl px-4 py-12">

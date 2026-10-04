@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "start": "node .output/server/index.mjs",
     "typecheck": "tsc --noEmit",
-    "hero-images": "node scripts/make-hero-images.mjs"
+    "hero-images": "node scripts/make-hero-images.mjs",
+    "images": "node scripts/make-hero-images.mjs && node scripts/make-site-images.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"

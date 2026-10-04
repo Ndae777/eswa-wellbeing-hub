@@ -32,12 +32,25 @@ if [ -d src/assets/hero ]; then
   echo "  prepared files: $m  (2 per photo)"
   ls -la src/assets/hero | tail -n +4
   if [ "$m" -eq 0 ]; then
-    bad "NOTHING prepared yet. This is why the site did not change. Run:  npm run hero-images"
+    bad "NOTHING prepared yet. This is why the site did not change. Run:  npm run images"
   else
     ok "photos are prepared. Restart the dev server (Ctrl+C, then npm run dev) and refresh with Ctrl+Shift+R"
   fi
 else
   bad "src/assets/hero does not exist"
+fi
+
+echo
+echo "== 3b. Photos for cards and page headers (site-images folder)"
+if [ -d site-images ]; then
+  n=$(ls site-images 2>/dev/null | grep -ciE '\.(jpe?g|png|webp|avif)$')
+  m=$(ls src/assets/site 2>/dev/null | grep -c '\.webp$')
+  echo "  photos in site-images: $n | prepared files: $m (2 per photo)"
+  ls site-images | grep -iE '\.(jpe?g|png|webp|avif)$' | sed 's/^/    /'
+  if [ "$n" -gt 0 ] && [ "$m" -eq 0 ]; then bad "photos are there but NOT prepared. Run:  npm run images"; fi
+  if [ "$n" -gt 0 ] && [ "$m" -gt 0 ]; then ok "prepared. Restart npm run dev and press Ctrl+Shift+R"; fi
+else
+  info "no site-images folder yet (unzip the latest zip)"
 fi
 
 echo
@@ -48,9 +61,9 @@ if git rev-parse --git-dir >/dev/null 2>&1; then
   c=$(git status --short | wc -l)
   echo "  uncommitted changes: $c"
   git status --short | head -15
-  t=$(git ls-files src/assets/hero | grep -c '\.webp$')
+  t=$(git ls-files src/assets | grep -c '\.webp$')
   if [ "$t" -eq 0 ]; then
-    bad "no prepared photos are saved in git. Netlify cannot show photos that were never pushed"
+    bad "no prepared photos are saved in git. Netlify cannot show photos that were never pushed (git add . then commit and push)"
   else
     ok "$t prepared photo file(s) are saved in git"
   fi

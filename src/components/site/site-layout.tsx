@@ -9,6 +9,7 @@ import {
   MessageCircleHeart,
   ClipboardList,
   LayoutDashboard,
+  LogIn,
   LogOut,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
@@ -162,6 +163,12 @@ export function SiteLayout({ children }: { children: ReactNode }) {
             </div>
             <p className="mt-3 text-sm text-muted-foreground">{ESWA.name}</p>
             <p className="mt-1 text-sm italic text-muted-foreground">{ESWA.tagline}</p>
+            <Button asChild variant="outline" size="sm" className="mt-4 bg-card">
+              <Link to="/staff">
+                <LogIn className="mr-2 h-4 w-4" />
+                ESWA staff sign in
+              </Link>
+            </Button>
           </div>
           <div className="text-sm">
             <h3 className="font-display text-base">Contact</h3>
@@ -196,9 +203,6 @@ export function SiteLayout({ children }: { children: ReactNode }) {
         <div className="border-t border-border/60 px-4 py-4 text-center text-sm text-muted-foreground">
           © {new Date().getFullYear()} {ESWA.name}. ESWA provides wellbeing support and is not an
           emergency service.{" "}
-          <Link to="/staff" className="underline-offset-2 hover:text-primary hover:underline">
-            ESWA staff sign in
-          </Link>
         </div>
       </footer>
 

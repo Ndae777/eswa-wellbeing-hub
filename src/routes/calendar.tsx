@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Clock, MapPin, Plus, Trash2, Users } from "l
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { PageBanner } from "@/components/site/site-images";
 import { SiteLayout } from "@/components/site/site-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -251,7 +252,7 @@ function CalendarPage() {
 
   return (
     <SiteLayout>
-      <section className="bg-hero-gradient">
+      <PageBanner slot="page-calendar">
         <div className="mx-auto flex max-w-6xl flex-wrap items-end justify-between gap-4 px-4 py-10">
           <div>
             <h1 className="text-3xl sm:text-4xl">Workshop calendar</h1>
@@ -267,7 +268,7 @@ function CalendarPage() {
             </Button>
           )}
         </div>
-      </section>
+      </PageBanner>
 
       <section className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-4 flex items-center justify-between">

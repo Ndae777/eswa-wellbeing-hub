@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { HeroBanner } from "@/components/site/hero-banner";
+import { CardImage, ThumbImage, programmeSlot } from "@/components/site/site-images";
 import { SiteLayout } from "@/components/site/site-layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -152,18 +153,21 @@ function Index() {
           {[
             {
               to: "/workshops" as const,
+              slot: "card-workshops",
               icon: CalendarDays,
               title: "Workshops",
               text: "See upcoming sessions and register in under a minute.",
             },
             {
               to: "/chat" as const,
+              slot: "card-chat",
               icon: MessageCircleHeart,
               title: "Wellness chat",
               text: "Ask for mental health tips and short activities you can do today.",
             },
             {
               to: "/resources" as const,
+              slot: "card-support",
               icon: HeartPulse,
               title: "Mental health support",
               text: "South African helplines, crisis numbers and ESWA self-help guides.",
@@ -172,8 +176,9 @@ function Index() {
             <Link
               key={card.to}
               to={card.to}
-              className="reveal card-surface group p-6 transition hover:shadow-lift"
+              className="reveal card-surface group overflow-hidden p-6 transition hover:shadow-lift"
             >
+              <CardImage slot={card.slot} />
               <card.icon className="h-7 w-7 text-primary" />
               <h2 className="mt-4 font-display text-lg">{card.title}</h2>
               <p className="mt-2 text-sm text-muted-foreground">{card.text}</p>
@@ -194,7 +199,8 @@ function Index() {
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {programmes.map((programme) => (
-            <article key={programme.slug} className="reveal card-surface p-6">
+            <article key={programme.slug} className="reveal card-surface group overflow-hidden p-6">
+              <CardImage slot={`programme-${programme.slug}`} />
               <h3 className="font-display text-lg leading-snug">{programme.title}</h3>
               <p className="mt-2 text-sm text-muted-foreground">{programme.summary}</p>
             </article>
@@ -221,6 +227,7 @@ function Index() {
               key={workshop.id}
               className="card-surface flex flex-col gap-4 p-6 sm:flex-row sm:items-center"
             >
+              <ThumbImage slot={programmeSlot(workshop.programme)} />
               <div className="flex-1">
                 <p className="text-xs font-medium uppercase tracking-wide text-primary">
                   {workshop.programme}
