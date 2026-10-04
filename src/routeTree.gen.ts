@@ -21,7 +21,9 @@ import { Route as StaffRouteImport } from './routes/staff'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiFeedbackRouteImport } from './routes/api/feedback'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiMyRegistrationRouteImport } from './routes/api/my-registration'
 import { Route as ApiRegisterRouteImport } from './routes/api/register'
+import { Route as CancelTokenRouteImport } from './routes/cancel.$token'
 import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
 import { Route as WorkshopsWorkshopIdRouteImport } from './routes/workshops.$workshopId'
 
@@ -85,9 +87,19 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMyRegistrationRoute = ApiMyRegistrationRouteImport.update({
+  id: '/api/my-registration',
+  path: '/api/my-registration',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiRegisterRoute = ApiRegisterRouteImport.update({
   id: '/api/register',
   path: '/api/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CancelTokenRoute = CancelTokenRouteImport.update({
+  id: '/cancel/$token',
+  path: '/cancel/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WorkshopsIndexRoute = WorkshopsIndexRouteImport.update({
@@ -114,7 +126,9 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/api/feedback': typeof ApiFeedbackRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/my-registration': typeof ApiMyRegistrationRoute
   '/api/register': typeof ApiRegisterRoute
+  '/cancel/$token': typeof CancelTokenRoute
   '/workshops/$workshopId': typeof WorkshopsWorkshopIdRoute
   '/workshops/': typeof WorkshopsIndexRoute
 }
@@ -131,7 +145,9 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/api/feedback': typeof ApiFeedbackRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/my-registration': typeof ApiMyRegistrationRoute
   '/api/register': typeof ApiRegisterRoute
+  '/cancel/$token': typeof CancelTokenRoute
   '/workshops/$workshopId': typeof WorkshopsWorkshopIdRoute
   '/workshops': typeof WorkshopsIndexRoute
 }
@@ -149,7 +165,9 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/api/feedback': typeof ApiFeedbackRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/my-registration': typeof ApiMyRegistrationRoute
   '/api/register': typeof ApiRegisterRoute
+  '/cancel/$token': typeof CancelTokenRoute
   '/workshops/$workshopId': typeof WorkshopsWorkshopIdRoute
   '/workshops/': typeof WorkshopsIndexRoute
 }
@@ -168,7 +186,9 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/feedback'
     | '/api/health'
+    | '/api/my-registration'
     | '/api/register'
+    | '/cancel/$token'
     | '/workshops/$workshopId'
     | '/workshops/'
   fileRoutesByTo: FileRoutesByTo
@@ -185,7 +205,9 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/feedback'
     | '/api/health'
+    | '/api/my-registration'
     | '/api/register'
+    | '/cancel/$token'
     | '/workshops/$workshopId'
     | '/workshops'
   id:
@@ -202,7 +224,9 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/feedback'
     | '/api/health'
+    | '/api/my-registration'
     | '/api/register'
+    | '/cancel/$token'
     | '/workshops/$workshopId'
     | '/workshops/'
   fileRoutesById: FileRoutesById
@@ -220,7 +244,9 @@ export interface RootRouteChildren {
   ApiChatRoute: typeof ApiChatRoute
   ApiFeedbackRoute: typeof ApiFeedbackRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiMyRegistrationRoute: typeof ApiMyRegistrationRoute
   ApiRegisterRoute: typeof ApiRegisterRoute
+  CancelTokenRoute: typeof CancelTokenRoute
   WorkshopsWorkshopIdRoute: typeof WorkshopsWorkshopIdRoute
   WorkshopsIndexRoute: typeof WorkshopsIndexRoute
 }
@@ -311,11 +337,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/my-registration': {
+      id: '/api/my-registration'
+      path: '/api/my-registration'
+      fullPath: '/api/my-registration'
+      preLoaderRoute: typeof ApiMyRegistrationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/register': {
       id: '/api/register'
       path: '/api/register'
       fullPath: '/api/register'
       preLoaderRoute: typeof ApiRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cancel/$token': {
+      id: '/cancel/$token'
+      path: '/cancel/$token'
+      fullPath: '/cancel/$token'
+      preLoaderRoute: typeof CancelTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/workshops/': {
@@ -348,7 +388,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatRoute: ApiChatRoute,
   ApiFeedbackRoute: ApiFeedbackRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiMyRegistrationRoute: ApiMyRegistrationRoute,
   ApiRegisterRoute: ApiRegisterRoute,
+  CancelTokenRoute: CancelTokenRoute,
   WorkshopsWorkshopIdRoute: WorkshopsWorkshopIdRoute,
   WorkshopsIndexRoute: WorkshopsIndexRoute,
 }

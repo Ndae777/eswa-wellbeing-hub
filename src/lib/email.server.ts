@@ -22,6 +22,7 @@ type Message = {
   html: string;
   text: string;
   replyTo?: string | undefined;
+  attachments?: { filename: string; content: string }[] | undefined;
 };
 
 export function emailIsConfigured(): boolean {
@@ -51,6 +52,7 @@ export async function sendEmail(message: Message): Promise<EmailResult> {
         html: message.html,
         text: message.text,
         ...(message.replyTo ? { reply_to: message.replyTo } : {}),
+        ...(message.attachments ? { attachments: message.attachments } : {}),
       }),
       signal: AbortSignal.timeout(8000),
     });
@@ -79,4 +81,60 @@ export function formatSaTime(iso: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+// ---------------------------------------------------------------------------
+// Calendar invite (.ics) so the workshop lands in the teacher's calendar.
+// ---------------------------------------------------------------------------
+
+function icsEscape(value: string): string {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/\r?\n/g, "\\n")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,");
+}
+
+function icsTime(date: Date): string {
+  return date
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}/, "");
+}
+
+export function buildCalendarInvite(input: {
+  uid: string;
+  title: string;
+  startsAt: string;
+  durationMinutes: number;
+  location: string;
+  notes: string;
+}): string {
+  const start = new Date(input.startsAt);
+  const end = new Date(start.getTime() + input.durationMinutes * 60_000);
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//ESWA//Wellbeing Hub//EN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${input.uid}@eswa-wellbeing-hub`,
+    `DTSTAMP:${icsTime(new Date())}`,
+    `DTSTART:${icsTime(start)}`,
+    `DTEND:${icsTime(end)}`,
+    `SUMMARY:${icsEscape(input.title)}`,
+    `LOCATION:${icsEscape(input.location)}`,
+    `DESCRIPTION:${icsEscape(input.notes)}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+}
+
+// The public web address, used for links inside emails. We read it from settings
+// and never from the incoming request, so nobody can make our emails point at
+// another website.
+export function publicSiteUrl(): string | null {
+  const value = process.env["VITE_PUBLIC_APP_URL"] ?? "";
+  if (!/^https:\/\/[^\s/]+$/.test(value.replace(/\/$/, ""))) return null;
+  return value.replace(/\/$/, "");
 }

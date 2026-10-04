@@ -79,6 +79,7 @@ export type Database = {
       registrations: {
         Row: {
           attended: boolean
+          cancel_token: string
           created_at: string
           dietary_or_access_needs: string | null
           email: string
@@ -92,6 +93,7 @@ export type Database = {
         }
         Insert: {
           attended?: boolean
+          cancel_token?: string
           created_at?: string
           dietary_or_access_needs?: string | null
           email: string
@@ -105,6 +107,7 @@ export type Database = {
         }
         Update: {
           attended?: boolean
+          cancel_token?: string
           created_at?: string
           dietary_or_access_needs?: string | null
           email?: string
@@ -162,6 +165,24 @@ export type Database = {
         }
         Relationships: []
       }
+      workshop_joining_details: {
+        Row: {
+          details: string
+          updated_at: string
+          workshop_id: string
+        }
+        Insert: {
+          details: string
+          updated_at?: string
+          workshop_id: string
+        }
+        Update: {
+          details?: string
+          updated_at?: string
+          workshop_id?: string
+        }
+        Relationships: []
+      }
       workshops: {
         Row: {
           capacity: number
@@ -209,6 +230,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_registration: {
+        Args: { p_token: string }
+        Returns: string
+      }
+      get_registration_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          duration_minutes: number
+          full_name: string
+          is_past: boolean
+          joining_details: string | null
+          location: string
+          starts_at: string
+          title: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -89,7 +89,11 @@ export const Route = createFileRoute("/api/register")({
         }
         if (!workshop) return fail(jsonResponse, "workshop_unavailable", 404);
 
+        // Secret link token for cancelling. Created here so we can put it in the email.
+        const cancelToken = crypto.randomUUID();
+
         const { error: insertError } = await supabase.from("registrations").insert({
+          cancel_token: cancelToken,
           workshop_id: workshop.id,
           full_name: values.full_name,
           email: values.email,
@@ -117,7 +121,17 @@ export const Route = createFileRoute("/api/register")({
           return fail(jsonResponse, "unavailable", 503);
         }
 
-        // The seat is saved. Now the emails. A failed email never undoes the seat.
+        // The seat is saved. Now fetch the private joining details (Teams link,
+        // directions) using the token, then send the emails. A failed email never
+        // undoes the seat.
+        const { data: mine } = await supabase.rpc("get_registration_by_token", {
+          p_token: cancelToken,
+        });
+        const joiningDetails = mine?.[0]?.joining_details ?? null;
+
+        const siteUrl = email.publicSiteUrl();
+        const cancelLink = siteUrl ? `${siteUrl}/cancel/${cancelToken}` : null;
+
         let emailStatus: "sent" | "not_sent" = "not_sent";
         if (!limiters.byEmail.tooMany(values.email)) {
           const when = email.formatSaTime(workshop.starts_at);
@@ -125,32 +139,66 @@ export const Route = createFileRoute("/api/register")({
           const safeTitle = email.escapeHtml(workshop.title);
           const safeWhere = email.escapeHtml(workshop.location);
           const contactEmail = process.env["NOTIFY_EMAIL"] ?? "";
+          const row = (label: string, value: string) =>
+            `<tr><td style="padding:4px 14px 4px 0;color:#6b7280;vertical-align:top">${label}</td><td>${value}</td></tr>`;
+
+          const invite = email.buildCalendarInvite({
+            uid: cancelToken,
+            title: workshop.title,
+            startsAt: workshop.starts_at,
+            durationMinutes: workshop.duration_minutes,
+            location: workshop.location,
+            notes:
+              joiningDetails ?? "Organised by the Educator Support and Wellness Alliance (ESWA).",
+          });
+
+          const textLines = [
+            `Hello ${values.full_name},`,
+            "",
+            `Your seat is reserved for "${workshop.title}".`,
+            "",
+            `When: ${when} (South African time)`,
+            `Length: ${workshop.duration_minutes} minutes`,
+            `Where: ${workshop.location}`,
+            ...(joiningDetails ? ["", "How to join:", joiningDetails] : []),
+            "",
+            "A calendar file is attached. Open it to add the workshop to your calendar.",
+            ...(cancelLink
+              ? ["", "Can't make it? Please cancel so someone else can take your seat:", cancelLink]
+              : ["", "Can't make it? Please reply to this email so we can free your seat."]),
+            "",
+            "Educator Support and Wellness Alliance (ESWA)",
+            "Wellness for Teachers. Success for Learners.",
+          ];
 
           const result = await email.sendEmail({
             to: values.email,
             replyTo: contactEmail || undefined,
             subject: `You're registered: ${workshop.title}`,
-            text:
-              `Hello ${values.full_name},\n\n` +
-              `Your seat is reserved for "${workshop.title}".\n\n` +
-              `When: ${when} (South African time)\n` +
-              `Length: ${workshop.duration_minutes} minutes\n` +
-              `Where: ${workshop.location}\n\n` +
-              `If anything changes we will email you. If you can no longer attend, ` +
-              `please tell us so someone else can take your seat.\n\n` +
-              `Educator Support and Wellness Alliance (ESWA)\n` +
-              `Wellness for Teachers. Success for Learners.`,
+            text: textLines.join("\n"),
+            attachments: [
+              {
+                filename: "eswa-workshop.ics",
+                content: Buffer.from(invite, "utf-8").toString("base64"),
+              },
+            ],
             html:
               `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1f2937;line-height:1.55">` +
               `<h2 style="margin:0 0 12px">You're registered</h2>` +
               `<p>Hello ${safeName},</p>` +
               `<p>Your seat is reserved for <strong>${safeTitle}</strong>.</p>` +
               `<table style="border-collapse:collapse;margin:16px 0">` +
-              `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">When</td><td>${email.escapeHtml(when)} (South African time)</td></tr>` +
-              `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Length</td><td>${workshop.duration_minutes} minutes</td></tr>` +
-              `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Where</td><td>${safeWhere}</td></tr>` +
+              row("When", `${email.escapeHtml(when)} (South African time)`) +
+              row("Length", `${workshop.duration_minutes} minutes`) +
+              row("Where", safeWhere) +
+              (joiningDetails
+                ? row("How to join", email.escapeHtml(joiningDetails).replace(/\n/g, "<br>"))
+                : "") +
               `</table>` +
-              `<p>If anything changes we will email you. If you can no longer attend, please tell us so someone else can take your seat.</p>` +
+              `<p>A calendar file is attached. Open it to add the workshop to your calendar.</p>` +
+              (cancelLink
+                ? `<p>Can't make it? Please <a href="${cancelLink}">cancel your seat</a> so someone else can take it.</p>`
+                : `<p>Can't make it? Please reply to this email so we can free your seat.</p>`) +
               `<p style="color:#6b7280;font-size:13px">Educator Support and Wellness Alliance (ESWA)<br>Wellness for Teachers. Success for Learners.</p>` +
               `</div>`,
           });
@@ -171,7 +219,7 @@ export const Route = createFileRoute("/api/register")({
           }
         }
 
-        return jsonResponse({ ok: true, emailStatus });
+        return jsonResponse({ ok: true, emailStatus, cancelToken, joiningDetails });
       },
     },
   },

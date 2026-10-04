@@ -59,7 +59,12 @@ const emptyForm: FormState = {
   dietary_or_access_needs: "",
 };
 
-type Outcome = { emailStatus: "sent" | "not_sent"; email: string };
+type Outcome = {
+  emailStatus: "sent" | "not_sent";
+  email: string;
+  cancelToken: string | null;
+  joiningDetails: string | null;
+};
 
 const SERVER_MESSAGES: { [code: string]: string } = {
   too_many: "You've tried a few times in a row. Please wait a few minutes and try again.",
@@ -122,6 +127,10 @@ function WorkshopDetail() {
       return {
         emailStatus: reply.data["emailStatus"] === "sent" ? "sent" : "not_sent",
         email: form.email.trim().toLowerCase(),
+        cancelToken:
+          typeof reply.data["cancelToken"] === "string" ? reply.data["cancelToken"] : null,
+        joiningDetails:
+          typeof reply.data["joiningDetails"] === "string" ? reply.data["joiningDetails"] : null,
       } as Outcome;
     },
     onSuccess: (result) => {
@@ -285,7 +294,26 @@ function WorkshopDetail() {
                   {formatWorkshopDate(workshop.starts_at)}
                 </p>
                 <p className="text-muted-foreground">{workshop.location}</p>
+                {outcome.joiningDetails && (
+                  <p className="mt-2 whitespace-pre-line border-t border-border pt-2">
+                    <span className="font-medium">How to join: </span>
+                    {outcome.joiningDetails}
+                  </p>
+                )}
               </div>
+              {outcome.cancelToken && (
+                <p className="mt-4 text-sm text-muted-foreground">
+                  Can't make it?{" "}
+                  <Link
+                    to="/cancel/$token"
+                    params={{ token: outcome.cancelToken }}
+                    className="font-medium text-primary underline"
+                  >
+                    Use your private cancel link
+                  </Link>{" "}
+                  to free your seat. Please keep it to yourself.
+                </p>
+              )}
               <div className="mt-5 flex flex-wrap justify-center gap-3">
                 <Button asChild variant="secondary">
                   <Link to="/workshops">Other workshops</Link>

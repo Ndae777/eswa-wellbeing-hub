@@ -78,6 +78,7 @@ type Draft = {
   location: string;
   capacity: number;
   is_published: boolean;
+  joining_details: string;
 };
 
 // Returns a plain-English problem, or null when the workshop details are fine.
@@ -104,6 +105,8 @@ function draftProblem(d: Draft): string | null {
   if (!d.location.trim()) return "Please say where the workshop takes place (or 'Online').";
   if (d.location.length > 200) return "Please keep the location under 200 characters.";
   if (d.description.length > 2000) return "Please keep the description under 2000 characters.";
+  if (d.joining_details.length > 1500)
+    return "Please keep the joining details under 1500 characters.";
   return null;
 }
 
@@ -120,6 +123,7 @@ function emptyDraft(date: Date): Draft {
     location: "Online (Microsoft Teams)",
     capacity: 50,
     is_published: true,
+    joining_details: "",
   };
 }
 
@@ -199,10 +203,26 @@ function CalendarPage() {
         capacity: d.capacity,
         is_published: d.is_published,
       };
-      const res = d.id
-        ? await supabase.from("workshops").update(payload).eq("id", d.id)
-        : await supabase.from("workshops").insert(payload);
-      if (res.error) throw res.error;
+      let workshopId = d.id;
+      if (d.id) {
+        const res = await supabase.from("workshops").update(payload).eq("id", d.id);
+        if (res.error) throw res.error;
+      } else {
+        const res = await supabase.from("workshops").insert(payload).select("id").single();
+        if (res.error) throw res.error;
+        workshopId = res.data.id;
+      }
+      // Joining details are private: they go in their own table and are only
+      // given to people who register.
+      if (workshopId) {
+        const details = d.joining_details.trim();
+        const detailsResult = details
+          ? await supabase
+              .from("workshop_joining_details")
+              .upsert({ workshop_id: workshopId, details, updated_at: new Date().toISOString() })
+          : await supabase.from("workshop_joining_details").delete().eq("workshop_id", workshopId);
+        if (detailsResult.error) throw detailsResult.error;
+      }
     },
     onSuccess: () => {
       toast.success("Workshop saved");
@@ -374,7 +394,23 @@ function CalendarPage() {
             ...w,
             facilitator: w.facilitator ?? "",
             starts_at: toLocalInput(w.starts_at),
+            joining_details: "",
           });
+          // Load the private joining details (only admins are allowed to read them).
+          void supabase
+            .from("workshop_joining_details")
+            .select("details")
+            .eq("workshop_id", w.id)
+            .maybeSingle()
+            .then(({ data }) => {
+              if (data?.details) {
+                setDraft((current) =>
+                  current && current.id === w.id
+                    ? { ...current, joining_details: data.details }
+                    : current,
+                );
+              }
+            });
         }}
         onDelete={(id) => {
           const taken = counts?.get(id) ?? 0;
@@ -442,6 +478,14 @@ function CalendarPage() {
                 <Input
                   value={draft.location}
                   onChange={(e) => setDraft({ ...draft, location: e.target.value })}
+                />
+              </Field>
+              <Field label="Joining details (private, emailed to people who register)">
+                <Textarea
+                  rows={3}
+                  placeholder="Teams link, venue address, parking, what to bring…"
+                  value={draft.joining_details}
+                  onChange={(e) => setDraft({ ...draft, joining_details: e.target.value })}
                 />
               </Field>
               <div className="grid gap-3 sm:grid-cols-2">
