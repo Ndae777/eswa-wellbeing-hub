@@ -54,6 +54,12 @@ export function SiteLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
+      >
+        Skip to main content
+      </a>
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2 text-primary">
@@ -143,7 +149,9 @@ export function SiteLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="flex-1 pb-20 lg:pb-0">{children}</main>
+      <main id="main-content" tabIndex={-1} className="flex-1 pb-20 outline-none lg:pb-0">
+        {children}
+      </main>
 
       <footer className="border-t border-border bg-secondary/40">
         <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-3">
@@ -185,7 +193,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
             </Link>
           </div>
         </div>
-        <div className="border-t border-border/60 px-4 py-4 text-center text-xs text-muted-foreground">
+        <div className="border-t border-border/60 px-4 py-4 text-center text-sm text-muted-foreground">
           © {new Date().getFullYear()} {ESWA.name}. ESWA provides wellbeing support and is not an
           emergency service.{" "}
           <Link to="/staff" className="underline-offset-2 hover:text-primary hover:underline">

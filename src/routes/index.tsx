@@ -6,13 +6,14 @@ import {
   HeartPulse,
   MessageCircleHeart,
   Phone,
-  Sparkle,
   Users,
 } from "lucide-react";
 
+import { HeroBanner } from "@/components/site/hero-banner";
 import { SiteLayout } from "@/components/site/site-layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ESWA, outcomes, pillars, programmes } from "@/lib/eswa-content";
 import { fetchUpcomingWorkshops, formatWorkshopDate } from "@/lib/workshops";
 
@@ -37,39 +38,113 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { data: workshops } = useQuery({
+  const { data: workshops, isLoading: workshopsLoading } = useQuery({
     queryKey: ["workshops", "upcoming", 3],
     queryFn: () => fetchUpcomingWorkshops(3),
   });
 
+  const nextWorkshop = workshops?.[0];
+
   return (
     <SiteLayout>
-      <section className="bg-hero-gradient">
-        <div className="mx-auto max-w-6xl px-4 pb-16 pt-12 sm:pt-20">
-          <Badge className="bg-card text-primary shadow-soft hover:bg-card">
-            <Sparkle className="mr-1 h-3 w-3" /> A South African non-profit for educators
-          </Badge>
-          <p className="mt-6 text-sm font-medium uppercase tracking-widest text-primary/80">
-            Welcome to
-          </p>
-          <h1 className="mt-2 max-w-2xl text-4xl leading-tight text-foreground sm:text-5xl md:text-6xl">
-            Wellness for Teachers. Success for Learners.
-          </h1>
-          <p className="mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
-            {ESWA.name} helps educators and school leaders protect their wellbeing, so classrooms
-            stay places where both teachers and learners can thrive.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button asChild size="lg">
-              <Link to="/workshops">
-                Register for a workshop <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="bg-card">
-              <Link to="/resources">Get support now</Link>
-            </Button>
+      <HeroBanner>
+        <div className="grid items-center gap-10 lg:grid-cols-[1.4fr_1fr]">
+          <div>
+            <Badge
+              className="fade-up bg-card text-primary shadow-soft hover:bg-card"
+              style={{ "--i": 0 } as React.CSSProperties}
+            >
+              A South African non-profit for educators
+            </Badge>
+            <p
+              className="fade-up mt-6 text-sm font-medium uppercase tracking-widest text-primary"
+              style={{ "--i": 1 } as React.CSSProperties}
+            >
+              Welcome to
+            </p>
+            <h1
+              className="fade-up mt-2 max-w-2xl text-4xl leading-tight text-foreground sm:text-5xl md:text-6xl"
+              style={{ "--i": 2 } as React.CSSProperties}
+            >
+              Wellness for Teachers. Success for Learners.
+            </h1>
+            <p
+              className="fade-up mt-5 max-w-xl text-base text-foreground/80 sm:text-lg"
+              style={{ "--i": 3 } as React.CSSProperties}
+            >
+              {ESWA.name} helps educators and school leaders protect their wellbeing, so classrooms
+              stay places where both teachers and learners can thrive.
+            </p>
+            <div
+              className="fade-up mt-8 flex flex-wrap gap-3"
+              style={{ "--i": 4 } as React.CSSProperties}
+            >
+              <Button asChild size="lg">
+                <Link to="/workshops">
+                  Register for a workshop <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="bg-card">
+                <Link to="/resources">Get support now</Link>
+              </Button>
+            </div>
           </div>
+
+          {nextWorkshop && (
+            <div
+              className="fade-up card-surface hidden bg-card/90 p-5 backdrop-blur lg:block"
+              style={{ "--i": 5 } as React.CSSProperties}
+            >
+              <p className="text-xs font-medium uppercase tracking-widest text-primary/80">
+                Next workshop
+              </p>
+              <h2 className="mt-2 font-display text-xl leading-snug">{nextWorkshop.title}</h2>
+              <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                <CalendarDays className="h-4 w-4 text-primary" />
+                {formatWorkshopDate(nextWorkshop.starts_at)}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">{nextWorkshop.location}</p>
+              <Button asChild className="mt-4 w-full">
+                <Link to="/workshops/$workshopId" params={{ workshopId: nextWorkshop.id }}>
+                  Register now
+                </Link>
+              </Button>
+            </div>
+          )}
         </div>
+      </HeroBanner>
+
+      <section className="mx-auto max-w-6xl px-4 py-12">
+        <h2 className="reveal font-display text-2xl sm:text-3xl">How it works</h2>
+        <ol className="mt-6 grid gap-4 sm:grid-cols-3">
+          {[
+            {
+              step: "1",
+              title: "Pick a workshop",
+              text: "Browse free sessions on wellbeing, boundaries and burnout.",
+            },
+            {
+              step: "2",
+              title: "Register in a minute",
+              text: "No account needed. We email your confirmation and a calendar invite.",
+            },
+            {
+              step: "3",
+              title: "Join and feel supported",
+              text: "Attend online or in person, then tell us how it went.",
+            },
+          ].map((item) => (
+            <li key={item.step} className="reveal card-surface flex gap-4 p-5">
+              <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-primary font-display text-primary-foreground">
+                {item.step}
+              </span>
+              <div>
+                <h3 className="font-display text-base">{item.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{item.text}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-12">
@@ -97,7 +172,7 @@ function Index() {
             <Link
               key={card.to}
               to={card.to}
-              className="card-surface group p-6 transition hover:shadow-lift"
+              className="reveal card-surface group p-6 transition hover:shadow-lift"
             >
               <card.icon className="h-7 w-7 text-primary" />
               <h2 className="mt-4 font-display text-lg">{card.title}</h2>
@@ -110,7 +185,7 @@ function Index() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-8">
+      <section className="mx-auto max-w-6xl px-4 py-12">
         <div className="flex items-end justify-between gap-4">
           <h2 className="font-display text-2xl sm:text-3xl">Featured programmes</h2>
           <Link to="/about" className="text-sm font-medium text-primary hover:underline">
@@ -119,7 +194,7 @@ function Index() {
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {programmes.map((programme) => (
-            <article key={programme.slug} className="card-surface p-6">
+            <article key={programme.slug} className="reveal card-surface p-6">
               <h3 className="font-display text-lg leading-snug">{programme.title}</h3>
               <p className="mt-2 text-sm text-muted-foreground">{programme.summary}</p>
             </article>
@@ -127,7 +202,7 @@ function Index() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-8">
+      <section className="mx-auto max-w-6xl px-4 py-12">
         <div className="flex items-end justify-between gap-4">
           <h2 className="font-display text-2xl sm:text-3xl">Next workshops</h2>
           <Link to="/workshops" className="text-sm font-medium text-primary hover:underline">
@@ -135,6 +210,12 @@ function Index() {
           </Link>
         </div>
         <div className="mt-6 space-y-4">
+          {workshopsLoading && (
+            <>
+              <Skeleton className="h-28 w-full rounded-xl" />
+              <Skeleton className="h-28 w-full rounded-xl" />
+            </>
+          )}
           {(workshops ?? []).map((workshop) => (
             <article
               key={workshop.id}
