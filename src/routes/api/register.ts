@@ -208,7 +208,7 @@ export const Route = createFileRoute("/api/register")({
           if (contactEmail) {
             await email.sendEmail({
               to: contactEmail,
-              subject: `New RSVP: ${workshop.title}`,
+              subject: `New registration: ${workshop.title}`,
               text:
                 `${values.full_name} (${values.email}) registered for "${workshop.title}".\n` +
                 `School: ${values.school || "not given"}\nProvince: ${values.province || "not given"}`,

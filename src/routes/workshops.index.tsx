@@ -19,7 +19,7 @@ export const Route = createFileRoute("/workshops/")({
       {
         name: "description",
         content:
-          "Browse upcoming ESWA educator wellbeing workshops and reserve your seat. Free registration for South African teachers and school leaders.",
+          "Browse upcoming ESWA educator wellbeing workshops and register for a seat. Free registration for South African teachers and school leaders.",
       },
       { property: "og:title", content: "Upcoming workshops — ESWA" },
       {
@@ -87,7 +87,7 @@ function Workshops() {
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="secondary">{workshop.programme}</Badge>
                   {left === 0 ? (
-                    <Badge variant="destructive">Fully booked</Badge>
+                    <Badge variant="destructive">Full</Badge>
                   ) : (
                     <Badge className="bg-success text-success-foreground hover:bg-success">
                       {left} seat{left === 1 ? "" : "s"} left
@@ -117,7 +117,7 @@ function Workshops() {
                 <div className="mt-5">
                   <Button asChild variant={left === 0 ? "outline" : "default"}>
                     <Link to="/workshops/$workshopId" params={{ workshopId: workshop.id }}>
-                      {left === 0 ? "View details" : "RSVP now"}
+                      {left === 0 ? "View details" : "Register now"}
                     </Link>
                   </Button>
                 </div>

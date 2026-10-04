@@ -24,12 +24,12 @@ export const Route = createFileRoute("/calendar")({
       {
         name: "description",
         content:
-          "Month-by-month calendar of ESWA educator wellbeing workshops with dates, times, venues and live RSVP numbers.",
+          "Month-by-month calendar of ESWA educator wellbeing workshops with dates, times, venues and live registration numbers.",
       },
       { property: "og:title", content: "Workshop calendar — ESWA" },
       {
         property: "og:description",
-        content: "See every upcoming ESWA workshop on one calendar and reserve your seat.",
+        content: "See every upcoming ESWA workshop on one calendar and register for a seat.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -257,8 +257,8 @@ function CalendarPage() {
             <h1 className="text-3xl sm:text-4xl">Workshop calendar</h1>
             <p className="mt-2 max-w-xl text-sm text-muted-foreground">
               {isAdmin
-                ? "Plan upcoming events. Click a day to add a workshop, or an event to edit it and see who has RSVP'd."
-                : "Every upcoming ESWA session at a glance. Click an event to see details and reserve your seat."}
+                ? "Plan upcoming events. Click a day to add a workshop, or an event to edit it and see who has registered."
+                : "Every upcoming ESWA session at a glance. Click an event to see details and register for a seat."}
             </p>
           </div>
           {isAdmin && (
@@ -374,7 +374,7 @@ function CalendarPage() {
                   </span>
                   <span className="flex items-center gap-1">
                     <Users className="h-3 w-3" />
-                    {counts?.get(w.id) ?? 0} of {w.capacity} RSVPs
+                    {counts?.get(w.id) ?? 0} of {w.capacity} registered
                   </span>
                 </p>
               </div>
@@ -516,7 +516,7 @@ function CalendarPage() {
                   checked={draft.is_published}
                   onCheckedChange={(v) => setDraft({ ...draft, is_published: v })}
                 />
-                Visible to the public (open for RSVPs)
+                Visible to the public (open for registration)
               </label>
               <Button type="submit" className="w-full" disabled={save.isPending}>
                 {save.isPending ? "Saving…" : "Save workshop"}
@@ -600,9 +600,9 @@ function EventDialog({
 
             {isAdmin && (
               <div className="mt-2">
-                <h4 className="mb-2 font-display text-base">RSVP list ({rsvps.length})</h4>
+                <h4 className="mb-2 font-display text-base">Registered ({rsvps.length})</h4>
                 {rsvps.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No RSVPs yet.</p>
+                  <p className="text-sm text-muted-foreground">No one has registered yet.</p>
                 ) : (
                   <ul className="divide-y divide-border rounded-lg border border-border text-sm">
                     {rsvps.map((r) => (
@@ -626,7 +626,7 @@ function EventDialog({
               {workshop.is_published && new Date(workshop.starts_at) > new Date() && (
                 <Button asChild>
                   <Link to="/workshops/$workshopId" params={{ workshopId: workshop.id }}>
-                    RSVP
+                    Register
                   </Link>
                 </Button>
               )}

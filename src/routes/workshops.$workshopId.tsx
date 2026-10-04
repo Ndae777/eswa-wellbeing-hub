@@ -23,13 +23,13 @@ import { validateRegistration, type RegistrationErrors } from "@/lib/validation"
 export const Route = createFileRoute("/workshops/$workshopId")({
   head: () => ({
     meta: [
-      { title: "Workshop details and RSVP — ESWA" },
+      { title: "Workshop details and registration — ESWA" },
       {
         name: "description",
         content:
-          "See the full details of this ESWA educator wellbeing workshop and reserve your seat in under a minute.",
+          "See the full details of this ESWA educator wellbeing workshop and register in under a minute.",
       },
-      { property: "og:title", content: "Workshop details and RSVP — ESWA" },
+      { property: "og:title", content: "Workshop details and registration — ESWA" },
       {
         property: "og:description",
         content: "Date, time, venue, facilitator and free registration for this ESWA workshop.",
@@ -139,7 +139,7 @@ function WorkshopDetail() {
       setErrors({});
       setAttempted(false);
       queryClient.invalidateQueries({ queryKey: ["workshops", "counts"] });
-      toast.success("Your seat is reserved.");
+      toast.success("You're registered.");
     },
     onError: (error: Error) => {
       if (error.message === "fields") {
@@ -233,7 +233,7 @@ function WorkshopDetail() {
   const closedReason = isPast
     ? "This workshop has already taken place."
     : seatsLeft === 0
-      ? "This workshop is fully booked."
+      ? "This workshop is full."
       : null;
 
   return (
@@ -275,7 +275,7 @@ function WorkshopDetail() {
           {outcome ? (
             <div className="text-center" role="status">
               <CheckCircle2 className="mx-auto h-10 w-10 text-success" />
-              <h2 className="mt-3 font-display text-xl">You're on the list</h2>
+              <h2 className="mt-3 font-display text-xl">You're registered</h2>
               {outcome.emailStatus === "sent" ? (
                 <p className="mt-2 text-sm text-muted-foreground">
                   We've sent a confirmation to <strong>{outcome.email}</strong>. If you can't see it
@@ -285,7 +285,7 @@ function WorkshopDetail() {
                 <p className="mt-2 text-sm text-muted-foreground">
                   Your seat is saved. We couldn't send the confirmation email just now, so please
                   take a screenshot of the details below. The ESWA team can also confirm your
-                  booking if you contact us.
+                  registration if you contact us.
                 </p>
               )}
               <div className="mx-auto mt-4 max-w-sm rounded-lg bg-secondary/60 p-4 text-left text-sm">
@@ -337,7 +337,7 @@ function WorkshopDetail() {
           ) : (
             <form className="space-y-4" onSubmit={onSubmit} noValidate>
               <div>
-                <h2 className="font-display text-xl">Reserve your seat</h2>
+                <h2 className="font-display text-xl">Register for this workshop</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   No account needed. Fields marked * are required. We only use these details to run
                   the workshop and report on impact.
@@ -465,7 +465,7 @@ function WorkshopDetail() {
               </div>
 
               <Button type="submit" size="lg" disabled={register.isPending}>
-                {register.isPending ? "Reserving your seat…" : "Confirm my RSVP"}
+                {register.isPending ? "Registering you…" : "Register me"}
               </Button>
             </form>
           )}

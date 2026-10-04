@@ -2,7 +2,7 @@
 // Needs two settings on the server:
 //   RESEND_API_KEY  (secret)
 //   EMAIL_FROM      for example:  ESWA <hello@yourdomain.org.za>
-// Optional: NOTIFY_EMAIL, where ESWA staff get a copy of each new RSVP and feedback.
+// Optional: NOTIFY_EMAIL, where ESWA staff get a copy of each new registration and feedback.
 // Without the first two, nothing is sent and the site says so honestly.
 
 export type EmailResult = "sent" | "not_configured" | "failed";

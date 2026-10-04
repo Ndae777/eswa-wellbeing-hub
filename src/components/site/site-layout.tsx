@@ -9,7 +9,6 @@ import {
   MessageCircleHeart,
   ClipboardList,
   LayoutDashboard,
-  LogIn,
   LogOut,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
@@ -90,16 +89,9 @@ export function SiteLayout({ children }: { children: ReactNode }) {
                   Sign out
                 </Button>
               </div>
-            ) : (
-              <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-                <Link to="/staff">
-                  <LogIn className="mr-1 h-4 w-4" />
-                  Staff sign in
-                </Link>
-              </Button>
-            )}
+            ) : null}
             <Button asChild size="sm" className="hidden sm:inline-flex">
-              <Link to="/workshops">Book a workshop</Link>
+              <Link to="/workshops">Register for a workshop</Link>
             </Button>
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
@@ -143,16 +135,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
                         Sign out
                       </button>
                     </>
-                  ) : (
-                    <Link
-                      to="/staff"
-                      onClick={() => setOpen(false)}
-                      className="mt-4 flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary"
-                    >
-                      <LogIn className="h-4 w-4 text-primary" />
-                      ESWA staff sign in
-                    </Link>
-                  )}
+                  ) : null}
                 </nav>
               </SheetContent>
             </Sheet>
@@ -194,7 +177,10 @@ export function SiteLayout({ children }: { children: ReactNode }) {
             <p className="mt-1 text-muted-foreground">
               Lifeline SA <span className="font-medium text-foreground">0861 322 322</span>
             </p>
-            <Link to="/resources" className="mt-3 inline-block font-medium text-primary hover:underline">
+            <Link
+              to="/resources"
+              className="mt-3 inline-block font-medium text-primary hover:underline"
+            >
               All support numbers →
             </Link>
           </div>
@@ -202,8 +188,8 @@ export function SiteLayout({ children }: { children: ReactNode }) {
         <div className="border-t border-border/60 px-4 py-4 text-center text-xs text-muted-foreground">
           © {new Date().getFullYear()} {ESWA.name}. ESWA provides wellbeing support and is not an
           emergency service.{" "}
-          <Link to="/staff" className="hover:text-primary">
-            Staff sign in
+          <Link to="/staff" className="underline-offset-2 hover:text-primary hover:underline">
+            ESWA staff sign in
           </Link>
         </div>
       </footer>

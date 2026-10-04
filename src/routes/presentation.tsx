@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Grid2X2, Maximize2, Minimize2, Printer, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,15 @@ import calendar from "@/assets/eswa-calendar-crop.jpg";
 import resources from "@/assets/eswa-resources-crop.jpg";
 
 export const Route = createFileRoute("/presentation")({
+  // Hidden from the public unless VITE_SHOW_PRESENTATION is set to "true".
+  beforeLoad: () => {
+    if (import.meta.env["VITE_SHOW_PRESENTATION"] !== "true") {
+      throw redirect({ to: "/" });
+    }
+  },
   head: () => ({
     meta: [
+      { name: "robots", content: "noindex" },
       { title: "ESWA pilot presentation — Educator wellbeing, made actionable" },
       {
         name: "description",

@@ -79,7 +79,7 @@ function Index() {
               to: "/workshops" as const,
               icon: CalendarDays,
               title: "Workshops",
-              text: "See upcoming sessions and reserve your seat in under a minute.",
+              text: "See upcoming sessions and register in under a minute.",
             },
             {
               to: "/chat" as const,
@@ -94,7 +94,11 @@ function Index() {
               text: "South African helplines, crisis numbers and ESWA self-help guides.",
             },
           ].map((card) => (
-            <Link key={card.to} to={card.to} className="card-surface group p-6 transition hover:shadow-lift">
+            <Link
+              key={card.to}
+              to={card.to}
+              className="card-surface group p-6 transition hover:shadow-lift"
+            >
               <card.icon className="h-7 w-7 text-primary" />
               <h2 className="mt-4 font-display text-lg">{card.title}</h2>
               <p className="mt-2 text-sm text-muted-foreground">{card.text}</p>
@@ -132,7 +136,10 @@ function Index() {
         </div>
         <div className="mt-6 space-y-4">
           {(workshops ?? []).map((workshop) => (
-            <article key={workshop.id} className="card-surface flex flex-col gap-4 p-6 sm:flex-row sm:items-center">
+            <article
+              key={workshop.id}
+              className="card-surface flex flex-col gap-4 p-6 sm:flex-row sm:items-center"
+            >
               <div className="flex-1">
                 <p className="text-xs font-medium uppercase tracking-wide text-primary">
                   {workshop.programme}
@@ -144,7 +151,7 @@ function Index() {
               </div>
               <Button asChild variant="secondary">
                 <Link to="/workshops/$workshopId" params={{ workshopId: workshop.id }}>
-                  RSVP now
+                  Register now
                 </Link>
               </Button>
             </article>
