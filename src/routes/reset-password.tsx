@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Check, Circle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -8,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyError } from "@/lib/friendly-errors";
+import { PASSWORD_MIN_LENGTH, PASSWORD_RULES, passwordProblems } from "@/lib/validation";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
@@ -47,9 +49,9 @@ function ResetPassword() {
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (password.length < 10) {
+    if (passwordProblems(password).length > 0) {
       toast.error(
-        "Please use at least 10 characters. A few random words joined together work well.",
+        "Your password isn't strong enough yet. Please meet every rule in the checklist.",
       );
       return;
     }
@@ -78,6 +80,9 @@ function ResetPassword() {
     <SiteLayout>
       <div className="mx-auto max-w-md px-4 py-14">
         <h1 className="font-display text-2xl">Choose a new password</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          First time signing in? Set your own password here and you'll be signed in straight away.
+        </p>
 
         {ready ? (
           <form onSubmit={submit} className="card-surface mt-6 space-y-4 p-6">
@@ -87,11 +92,31 @@ function ResetPassword() {
                 id="new-password"
                 type="password"
                 required
-                minLength={10}
+                minLength={PASSWORD_MIN_LENGTH}
                 autoComplete="new-password"
+                aria-describedby="password-rules"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              <ul id="password-rules" className="space-y-1 pt-1 text-sm">
+                {PASSWORD_RULES.map((rule) => {
+                  const met = rule.test(password);
+                  return (
+                    <li
+                      key={rule.id}
+                      className={`flex items-center gap-2 ${met ? "text-success" : "text-muted-foreground"}`}
+                    >
+                      {met ? (
+                        <Check className="h-4 w-4" aria-hidden="true" />
+                      ) : (
+                        <Circle className="h-4 w-4" aria-hidden="true" />
+                      )}
+                      <span>{rule.label}</span>
+                      <span className="sr-only">{met ? "(done)" : "(not yet)"}</span>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Confirm new password</Label>
@@ -99,7 +124,7 @@ function ResetPassword() {
                 id="confirm-password"
                 type="password"
                 required
-                minLength={10}
+                minLength={PASSWORD_MIN_LENGTH}
                 autoComplete="new-password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}

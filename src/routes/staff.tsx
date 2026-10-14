@@ -148,6 +148,11 @@ function SignIn() {
       <p className="mt-2 text-sm text-muted-foreground">
         This area is for the ESWA team. Beneficiaries do not need an account.
       </p>
+      <div className="mt-4 rounded-md border border-border bg-secondary/50 p-3 text-sm">
+        <strong>First time signing in?</strong> Type your work email below and click{" "}
+        <strong>Forgot password?</strong>. We'll email you a link so you can set your own password.
+        After that, you can sign in normally.
+      </div>
       <form onSubmit={submit} className="card-surface mt-6 space-y-4 p-6">
         <div className="space-y-2">
           <Label htmlFor="email">Work email</Label>

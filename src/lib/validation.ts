@@ -226,3 +226,30 @@ export function validateFeedback(input: unknown): {
 
   return { values, errors };
 }
+
+// ---------------------------------------------------------------------------
+// Staff passwords
+// ---------------------------------------------------------------------------
+
+export const PASSWORD_MIN_LENGTH = 10;
+
+// One entry per rule so the browser can show a live checklist as people type.
+export const PASSWORD_RULES = [
+  {
+    id: "length",
+    label: `At least ${PASSWORD_MIN_LENGTH} characters`,
+    test: (value: string) => value.length >= PASSWORD_MIN_LENGTH,
+  },
+  { id: "lower", label: "A lowercase letter (a-z)", test: (value: string) => /[a-z]/.test(value) },
+  { id: "upper", label: "An uppercase letter (A-Z)", test: (value: string) => /[A-Z]/.test(value) },
+  { id: "number", label: "A number (0-9)", test: (value: string) => /\d/.test(value) },
+  {
+    id: "symbol",
+    label: "A symbol, for example ! @ # $ %",
+    test: (value: string) => /[^A-Za-z0-9\s]/.test(value),
+  },
+] as const;
+
+export function passwordProblems(value: string): string[] {
+  return PASSWORD_RULES.filter((rule) => !rule.test(value)).map((rule) => rule.label);
+}
