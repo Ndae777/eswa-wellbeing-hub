@@ -1,11 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import type { Session } from "@supabase/supabase-js";
-import { Download, LogOut, MessageSquareQuote, Users } from "lucide-react";
+import {
+  CalendarDays,
+  CheckCircle2,
+  Download,
+  Info,
+  LogOut,
+  ShieldCheck,
+  Star,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { EswaLogo } from "@/components/site/eswa-logo";
+import { PasswordInput } from "@/components/site/password-input";
 import { SiteLayout } from "@/components/site/site-layout";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -143,54 +156,69 @@ function SignIn() {
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-14">
-      <h1 className="font-display text-2xl">ESWA staff sign in</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        This area is for the ESWA team. Beneficiaries do not need an account.
-      </p>
-      <div className="mt-4 rounded-md border border-border bg-secondary/50 p-3 text-sm">
-        <strong>First time signing in?</strong> Type your work email below and click{" "}
-        <strong>Forgot password?</strong>. We'll email you a link so you can set your own password.
-        After that, you can sign in normally.
+    <div className="bg-hero-gradient min-h-[78vh]">
+      <div className="mx-auto max-w-md px-4 pb-16 pt-14">
+        <div className="flex flex-col items-center text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-soft">
+            <EswaLogo />
+          </span>
+          <h1 className="mt-4 font-display text-2xl">ESWA staff sign in</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            This area is for the ESWA team. Beneficiaries do not need an account.
+          </p>
+        </div>
+
+        <div className="mt-6 flex gap-3 rounded-xl border border-border bg-secondary/50 p-4 text-sm">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+          <p>
+            <strong>First time signing in?</strong> Type your work email below and click{" "}
+            <strong>Forgot password?</strong>. We'll email you a link so you can set your own
+            password. After that, you can sign in normally.
+          </p>
+        </div>
+
+        <form onSubmit={submit} className="card-surface mt-5 space-y-5 p-6">
+          <div className="space-y-2">
+            <Label htmlFor="email">Work email</Label>
+            <Input
+              id="email"
+              type="email"
+              required
+              autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-baseline justify-between gap-3">
+              <Label htmlFor="password">Password</Label>
+              <button
+                type="button"
+                className="text-sm font-medium text-primary hover:underline disabled:opacity-60"
+                disabled={pending}
+                onClick={() => void forgotPassword()}
+              >
+                Forgot password?
+              </button>
+            </div>
+            <PasswordInput
+              id="password"
+              required
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <Button type="submit" className="w-full" size="lg" disabled={pending}>
+            {pending ? "Signing you in…" : "Sign in"}
+          </Button>
+        </form>
+
+        <p className="mt-5 text-center text-xs text-muted-foreground">
+          <ShieldCheck className="mr-1.5 inline h-3.5 w-3.5 align-text-bottom" aria-hidden="true" />
+          Staff accounts are created by the ESWA administrator. Need access? Ask the ESWA office.
+        </p>
       </div>
-      <form onSubmit={submit} className="card-surface mt-6 space-y-4 p-6">
-        <div className="space-y-2">
-          <Label htmlFor="email">Work email</Label>
-          <Input
-            id="email"
-            type="email"
-            required
-            autoComplete="username"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        <Button type="submit" className="w-full" disabled={pending}>
-          Sign in
-        </Button>
-        <button
-          type="button"
-          className="w-full text-sm text-primary hover:underline"
-          disabled={pending}
-          onClick={() => void forgotPassword()}
-        >
-          Forgot password?
-        </button>
-      </form>
-      <p className="mt-4 text-center text-xs text-muted-foreground">
-        Staff accounts are created by the ESWA administrator. Need access? Ask the ESWA office.
-      </p>
     </div>
   );
 }
@@ -357,7 +385,10 @@ function Dashboard() {
   if (!isAdmin) {
     return (
       <div className="mx-auto max-w-md px-4 py-16 text-center">
-        <h1 className="font-display text-xl">Access pending</h1>
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary text-primary">
+          <ShieldCheck className="h-6 w-6" aria-hidden="true" />
+        </span>
+        <h1 className="mt-4 font-display text-xl">Access pending</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Your account is not yet approved for the ESWA dashboard. Please ask the ESWA office to
           grant you access.
@@ -385,26 +416,64 @@ function Dashboard() {
     return `${delta > 0 ? "+" : ""}${delta.toFixed(1)}`;
   })();
 
+  const stats = [
+    {
+      label: "Registrations",
+      value: registrations.length,
+      icon: Users,
+      tint: "bg-primary/10 text-primary",
+    },
+    {
+      label: "Unique beneficiaries",
+      value: uniqueBeneficiaries,
+      icon: Users,
+      tint: "bg-leaf/40 text-primary",
+    },
+    {
+      label: "Marked attended",
+      value: attendedCount,
+      icon: CheckCircle2,
+      tint: "bg-success/15 text-success",
+    },
+    {
+      label: "Average rating",
+      value: avgRating,
+      icon: Star,
+      tint: "bg-warning/25 text-warning-foreground",
+    },
+  ];
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl">ESWA dashboard</h1>
-          <p className="text-sm text-muted-foreground">Beneficiaries, attendance and impact.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={exportExcel} disabled={!data}>
-            <Download className="mr-2 h-4 w-4" /> Download Excel
-          </Button>
-          <Button variant="outline" onClick={() => void signOut()}>
-            <LogOut className="mr-2 h-4 w-4" /> Sign out
-          </Button>
+    <div className="mx-auto max-w-6xl px-4 py-8">
+      <div className="card-surface overflow-hidden">
+        <div className="bg-deep-gradient px-6 py-7 text-primary-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-widest opacity-80">
+                ESWA team area
+              </p>
+              <h1 className="mt-1 font-display text-3xl">Dashboard</h1>
+              <p className="mt-1 text-sm opacity-90">Beneficiaries, attendance and impact.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={exportExcel} disabled={!data} variant="secondary">
+                <Download className="mr-2 h-4 w-4" /> Download Excel
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => void signOut()}
+                className="border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
+              >
+                <LogOut className="mr-2 h-4 w-4" /> Sign out
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
       {dataFailed && (
         <div
-          className="card-surface mt-6 flex flex-wrap items-center justify-between gap-3 p-4"
+          className="card-surface mt-6 flex flex-wrap items-center justify-between gap-3 border-l-4 border-l-warning p-4"
           role="alert"
         >
           <p className="text-sm">
@@ -417,24 +486,33 @@ function Dashboard() {
       )}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "Registrations", value: registrations.length, icon: Users },
-          { label: "Unique beneficiaries", value: uniqueBeneficiaries, icon: Users },
-          { label: "Marked attended", value: attendedCount, icon: Users },
-          { label: "Average rating", value: avgRating, icon: MessageSquareQuote },
-        ].map((stat) => (
-          <div key={stat.label} className="card-surface p-5">
-            <stat.icon className="h-5 w-5 text-primary" />
-            <p className="mt-3 font-display text-2xl">{stat.value}</p>
-            <p className="text-sm text-muted-foreground">{stat.label}</p>
+        {stats.map((stat) => (
+          <div key={stat.label} className="card-surface p-5 transition hover:shadow-lift">
+            <span
+              className={`flex h-10 w-10 items-center justify-center rounded-xl ${stat.tint}`}
+              aria-hidden="true"
+            >
+              <stat.icon className="h-5 w-5" />
+            </span>
+            <p className="mt-4 font-display text-3xl leading-none">{stat.value}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{stat.label}</p>
           </div>
         ))}
       </div>
 
-      <p className="mt-4 text-sm text-muted-foreground">
-        Average reported wellbeing change after a workshop: <strong>{wellbeingLift}</strong> points
-        (out of 10), from {feedback.length} feedback responses.
-      </p>
+      <div className="card-surface mt-4 flex flex-wrap items-center gap-4 bg-secondary/40 p-5">
+        <span
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+          aria-hidden="true"
+        >
+          <TrendingUp className="h-5 w-5" />
+        </span>
+        <p className="text-sm text-muted-foreground">
+          Average reported wellbeing change after a workshop:{" "}
+          <strong className="font-display text-xl text-foreground">{wellbeingLift}</strong> points
+          (out of 10), from {feedback.length} feedback responses.
+        </p>
+      </div>
 
       <Tabs defaultValue="workshops" className="mt-8">
         <TabsList>
@@ -446,52 +524,92 @@ function Dashboard() {
         <TabsContent value="workshops" className="space-y-3">
           {(data?.workshops ?? []).map((workshop) => {
             const rows = registrations.filter((r) => r.workshop_id === workshop.id);
+            const attended = rows.filter((r) => r.attended).length;
+            const filled = Math.min(
+              100,
+              Math.round((rows.length / Math.max(workshop.capacity, 1)) * 100),
+            );
             return (
-              <div key={workshop.id} className="card-surface p-5">
-                <h2 className="font-display text-lg">{workshop.title}</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {formatWorkshopDate(workshop.starts_at)} · {workshop.location}
-                </p>
-                <p className="mt-2 text-sm">
-                  <strong>{rows.length}</strong> registered of {workshop.capacity} ·{" "}
-                  <strong>{rows.filter((r) => r.attended).length}</strong> attended
+              <div key={workshop.id} className="card-surface p-5 transition hover:shadow-lift">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 className="font-display text-lg">{workshop.title}</h2>
+                    <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                      <CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />
+                      {formatWorkshopDate(workshop.starts_at)} · {workshop.location}
+                    </p>
+                  </div>
+                  <Badge variant={filled >= 100 ? "default" : "secondary"}>
+                    {filled >= 100 ? "Full" : `${workshop.capacity - rows.length} seats left`}
+                  </Badge>
+                </div>
+
+                <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{ width: `${filled}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  <strong className="text-foreground">{rows.length}</strong> registered of{" "}
+                  {workshop.capacity} · <strong className="text-foreground">{attended}</strong>{" "}
+                  attended
                 </p>
               </div>
             );
           })}
+          {(data?.workshops ?? []).length === 0 && (
+            <p className="card-surface p-8 text-center text-sm text-muted-foreground">
+              No workshops yet. Add one from the Calendar page.
+            </p>
+          )}
         </TabsContent>
 
         <TabsContent value="registrations">
           <div className="card-surface overflow-x-auto p-2">
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="text-muted-foreground">
-                <tr>
-                  <th className="p-3">Name</th>
-                  <th className="p-3">Email</th>
-                  <th className="p-3">School</th>
-                  <th className="p-3">Province</th>
-                  <th className="p-3">Attended</th>
+                <tr className="border-b border-border">
+                  <th className="p-3 font-medium">Name</th>
+                  <th className="p-3 font-medium">Email</th>
+                  <th className="p-3 font-medium">School</th>
+                  <th className="p-3 font-medium">Province</th>
+                  <th className="p-3 font-medium">Attended</th>
                 </tr>
               </thead>
               <tbody>
                 {registrations.map((row) => (
-                  <tr key={row.id} className="border-t border-border">
-                    <td className="p-3">{row.full_name}</td>
-                    <td className="p-3">{row.email}</td>
-                    <td className="p-3">{row.school ?? "—"}</td>
-                    <td className="p-3">{row.province ?? "—"}</td>
+                  <tr
+                    key={row.id}
+                    className="border-t border-border transition-colors hover:bg-secondary/40"
+                  >
+                    <td className="p-3">
+                      <span className="flex items-center gap-3">
+                        <span
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary font-medium text-secondary-foreground"
+                          aria-hidden="true"
+                        >
+                          {row.full_name.trim().charAt(0).toUpperCase() || "?"}
+                        </span>
+                        <span className="font-medium">{row.full_name}</span>
+                      </span>
+                    </td>
+                    <td className="p-3 text-muted-foreground">{row.email}</td>
+                    <td className="p-3 text-muted-foreground">{row.school ?? "—"}</td>
+                    <td className="p-3 text-muted-foreground">{row.province ?? "—"}</td>
                     <td className="p-3">
                       <button
                         type="button"
                         onClick={() =>
                           toggleAttended.mutate({ id: row.id, attended: !row.attended })
                         }
-                        className={`rounded-md px-3 py-1 text-xs font-medium ${
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                           row.attended
-                            ? "bg-success text-success-foreground"
-                            : "bg-secondary text-secondary-foreground"
+                            ? "bg-success text-success-foreground hover:bg-success/90"
+                            : "bg-secondary text-secondary-foreground hover:bg-accent"
                         }`}
                       >
+                        {row.attended && <CheckCircle2 className="h-3.5 w-3.5" />}
                         {row.attended ? "Attended" : "Mark attended"}
                       </button>
                     </td>
@@ -499,35 +617,60 @@ function Dashboard() {
                 ))}
               </tbody>
             </table>
+            {registrations.length === 0 && (
+              <p className="p-8 text-center text-sm text-muted-foreground">
+                Nobody has registered yet.
+              </p>
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="feedback" className="space-y-3">
           {feedback.map((row) => (
-            <article key={row.id} className="card-surface p-5">
-              <p className="text-sm font-medium">
-                {row.full_name ?? "Anonymous"} · rated {row.overall_rating}/5 ·{" "}
-                {formatDateOnly(row.created_at)}
-              </p>
+            <article key={row.id} className="card-surface p-5 transition hover:shadow-lift">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-medium">
+                  {row.full_name ?? "Anonymous"}
+                  <span className="text-muted-foreground"> · {formatDateOnly(row.created_at)}</span>
+                </p>
+                <span
+                  className="flex items-center gap-0.5"
+                  aria-label={`Rated ${row.overall_rating} out of 5`}
+                >
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      aria-hidden="true"
+                      className={`h-4 w-4 ${
+                        star <= row.overall_rating
+                          ? "fill-warning text-warning"
+                          : "text-muted-foreground/40"
+                      }`}
+                    />
+                  ))}
+                </span>
+              </div>
               {row.most_valuable && (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  <strong>Most valuable:</strong> {row.most_valuable}
+                <p className="mt-3 text-sm text-muted-foreground">
+                  <strong className="text-foreground">Most valuable:</strong> {row.most_valuable}
                 </p>
               )}
               {row.improvements && (
                 <p className="mt-1 text-sm text-muted-foreground">
-                  <strong>Improve:</strong> {row.improvements}
+                  <strong className="text-foreground">Improve:</strong> {row.improvements}
                 </p>
               )}
               {row.future_topics && (
                 <p className="mt-1 text-sm text-muted-foreground">
-                  <strong>Future topics:</strong> {row.future_topics}
+                  <strong className="text-foreground">Future topics:</strong> {row.future_topics}
                 </p>
               )}
             </article>
           ))}
           {feedback.length === 0 && (
-            <p className="text-sm text-muted-foreground">No feedback submitted yet.</p>
+            <p className="card-surface p-8 text-center text-sm text-muted-foreground">
+              No feedback submitted yet.
+            </p>
           )}
         </TabsContent>
       </Tabs>
